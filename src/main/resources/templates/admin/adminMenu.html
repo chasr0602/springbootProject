@@ -1,0 +1,16 @@
+<!DOCTYPE html>
+<html lang="ko"
+      xmlns:th="http://www.thymeleaf.org"
+      xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
+      layout:decorate="~{layouts/exampleLayout}">
+
+<div layout:fragment="content" class="container text-center">
+  <h2>관리자 메뉴</h2>
+  <div>
+    <img src="/images/13.jpg" width="400px"/>
+    <hr/>
+    <a th:href="@{/}" class="btn btn-success">홈으로</a>
+  </div>
+</div>
+
+</html>
