@@ -1,5 +1,6 @@
 package com.example.greenprojectA.config;
 
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.config.Customizer;
@@ -8,10 +9,21 @@ import org.springframework.security.config.annotation.web.configuration.EnableWe
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
+import com.example.greenprojectA.config.LoginFailHandler;
+import com.example.greenprojectA.config.LoginSuccessHandler;
 
 @Configuration
 @EnableWebSecurity
 public class SecurityConfig {
+
+  private final LoginFailHandler customAuthenticationFailureHandler;
+  private final LoginSuccessHandler customAuthenticationSuccessHandler;
+
+  public SecurityConfig(LoginFailHandler customAuthenticationFailureHandler,
+                        LoginSuccessHandler customAuthenticationSuccessHandler) {
+    this.customAuthenticationFailureHandler = customAuthenticationFailureHandler;
+    this.customAuthenticationSuccessHandler = customAuthenticationSuccessHandler;
+  }
 
   @Bean
   public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
@@ -20,13 +32,16 @@ public class SecurityConfig {
     http.formLogin(form -> form
             .loginPage("/member/memberLogin")
             .defaultSuccessUrl("/member/memberLoginOk", true)
-            .failureUrl("/member/login/error")
-            .usernameParameter("username") // email → username 으로 변경 (엔티티 기준)
+            .failureHandler(customAuthenticationFailureHandler)   // ✅ 실패 핸들러 적용
+            .successHandler(customAuthenticationSuccessHandler)   // ✅ 성공 핸들러 적용
+            .usernameParameter("username")
             .permitAll()
     );
 
+
     // 요청 URL별 접근 권한 설정
     http.authorizeHttpRequests(request -> request
+            .requestMatchers("/", "/index", "/home", "/h").permitAll()
             .requestMatchers("/css/**", "/images/**", "/guest/**").permitAll()
             .requestMatchers("/member/memberLogin", "/member/login/error").permitAll()
             .requestMatchers("/admin/**").authenticated() // 관리자 권한은 member_level로 추후 필터링

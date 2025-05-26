@@ -45,23 +45,36 @@ public class MemberController {
     // 로그인 성공 후
     @GetMapping("/memberLoginOk")
     public String memberLoginOk(HttpServletRequest request,
+                                HttpServletResponse response,
                                 Authentication authentication,
                                 RedirectAttributes rttr) {
 
-        String username = authentication.getName();  // username 기준
-        Member member = memberService.findByUsername(username);
+        String mid = authentication.getName();  // username 기준
+        Member member = memberService.findByMid(mid);
+        int level = member.getMemberLevel();
 
-        rttr.addFlashAttribute("message", member.getName() + "님 로그인 되었습니다.");
+        // 승인대기 or 탈퇴요청 회원은 로그인 차단
+        if (level == 1) {  // 가입대기
+            rttr.addFlashAttribute("message", "관리자의 승인이 필요합니다.");
+            new SecurityContextLogoutHandler().logout(request, response, authentication);
+            return "redirect:/member/memberLogin";
+        }
+
+        if (level == 99) {  // 탈퇴 요청 회원
+            rttr.addFlashAttribute("message", "탈퇴 요청 상태이므로 로그인할 수 없습니다.");
+            new SecurityContextLogoutHandler().logout(request, response, authentication);
+            return "redirect:/member/memberLogin";
+        }
+
+        // 로그인 성공 처리
+        rttr.addFlashAttribute("message", member.getUsername() + "님 로그인 되었습니다.");
 
         HttpSession session = request.getSession();
-        session.setAttribute("sName", member.getName());
+        session.setAttribute("sName", member.getUsername());
 
-        int level = member.getMemberLevel();
         String strLevel = switch (level) {
             case 0 -> "관리자";
             case 2 -> "일반회원";
-            case 1 -> "승인대기";
-            case 99 -> "탈퇴요청";
             default -> "알 수 없음";
         };
         session.setAttribute("strLevel", strLevel);
@@ -82,9 +95,9 @@ public class MemberController {
                                RedirectAttributes rttr) {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
         if (authentication != null) {
-            String username = authentication.getName();
-            Member member = memberService.findByUsername(username);
-            rttr.addFlashAttribute("message", member.getName() + "님 로그아웃 되었습니다.");
+            String mid = authentication.getName();
+            Member member = memberService.findByMid(mid);
+            rttr.addFlashAttribute("message", member.getUsername() + "님 로그아웃 되었습니다.");
             new SecurityContextLogoutHandler().logout(request, response, authentication);
         }
         return "redirect:/member/memberLogin";
@@ -126,4 +139,15 @@ public class MemberController {
             return "redirect:/member/memberJoin";
         }
     }
+
+    // 탈퇴 요청 처리
+    @PostMapping("/requestQuit")
+    public String requestQuit(Authentication authentication,
+                              RedirectAttributes rttr) {
+        String mid = authentication.getName();
+        memberService.requestQuit(mid);
+        rttr.addFlashAttribute("message", "탈퇴 요청이 완료되었습니다. 7일의 유예기간 후 완전 삭제됩니다.");
+        return "redirect:/member/memberLogout";
+    }
+
 }

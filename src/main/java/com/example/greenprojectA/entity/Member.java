@@ -14,24 +14,24 @@ public class Member {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long idx;
 
-    @Column(length = 20, unique = true, nullable = false)
-    private String username;  // 로그인용 아이디
+    @Column(name = "mid", length = 20, unique = true, nullable = false)
+    private String mid;  // 로그인 아이디
 
     @Column(nullable = false)
-    private String password;  // 암호화된 비밀번호
+    private String username;  // 실명
 
     @Column(nullable = false)
-    private String name;      // 사용자 이름 (실명)
+    private String password;
 
     @Column(nullable = false, unique = true)
     private String email;
 
     @Column(name = "member_level", nullable = false)
-    private int memberLevel;  // 0=관리자, 1=가입대기, 2=일반회원, 99=탈퇴요청
+    private int memberLevel;  // 0=ADMIN, 1=PENDING, 2=USER, 99=QUIT_PENDING
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "company_id")
-    private Company company;  // 소속 기업
+    private Company company;
 
     @Column(name = "created_at")
     private LocalDateTime createdAt;
@@ -41,10 +41,6 @@ public class Member {
 
     @Column(name = "quit_requested_at")
     private LocalDateTime quitRequestedAt;
-
-    private int loginFailCount;
-
-    private boolean accountNonLocked = true;
 
     @PrePersist
     public void onCreate() {
