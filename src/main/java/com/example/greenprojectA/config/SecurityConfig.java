@@ -11,6 +11,8 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
 import com.example.greenprojectA.config.LoginFailHandler;
 import com.example.greenprojectA.config.LoginSuccessHandler;
+import org.springframework.security.web.csrf.CookieCsrfTokenRepository;
+import org.springframework.security.web.csrf.CsrfTokenRequestAttributeHandler;
 
 @Configuration
 @EnableWebSecurity
@@ -28,8 +30,20 @@ public class SecurityConfig {
   @Bean
   public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
 
-    // 사용자 정의 로그인 폼 설정
-    http.formLogin(form -> form
+    // CSRF 토큰을 요청 속성에 설정하는 핸들러 생성
+    CsrfTokenRequestAttributeHandler requestHandler = new CsrfTokenRequestAttributeHandler();
+    requestHandler.setCsrfRequestAttributeName("_csrf");
+
+    // 사용자가 만든 로그인폼 적용하기
+    http
+            .csrf(csrf -> csrf
+                    // CSRF 토큰 요청 핸들러 설정
+                    .csrfTokenRequestHandler(requestHandler)
+                    // /register 경로에 대해 CSRF 보호 비활성화
+                    .ignoringRequestMatchers("/member/**")
+                    // CSRF 토큰을 쿠키로 저장, HttpOnly 설정 비활성화
+                    .csrfTokenRepository(CookieCsrfTokenRepository.withHttpOnlyFalse()))
+            .formLogin(form -> form
             .loginPage("/member/memberLogin")
             .defaultSuccessUrl("/member/memberLoginOk", true)
             .failureHandler(customAuthenticationFailureHandler)   // ✅ 실패 핸들러 적용
@@ -43,7 +57,8 @@ public class SecurityConfig {
     http.authorizeHttpRequests(request -> request
             .requestMatchers("/", "/index", "/home", "/h").permitAll()
             .requestMatchers("/css/**", "/images/**", "/guest/**").permitAll()
-            .requestMatchers("/member/memberLogin", "/member/login/error").permitAll()
+            .requestMatchers("/member/memberLogin", "/member/login/error", "/member/memberJoin").permitAll()
+            .requestMatchers("/member/sendCode", "/member/verifyCode").permitAll()
             .requestMatchers("/admin/**").authenticated() // 관리자 권한은 member_level로 추후 필터링
             .requestMatchers("/member/memberMain").authenticated()
             .anyRequest().authenticated()

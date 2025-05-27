@@ -29,6 +29,10 @@ public class MemberDto {
   @NotNull(message = "소속 기업을 선택해야 합니다.")
   private Long companyId;
 
+  // 선택 입력 항목
+  private String tel;
+  private String address;
+
   // 커스텀 검증: 비밀번호와 확인 비밀번호 일치 여부
   public boolean isPasswordConfirmed() {
     return password != null && password.equals(confirmPassword);

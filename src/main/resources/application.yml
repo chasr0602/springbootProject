@@ -27,6 +27,23 @@ spring:
     username: root
     password: 1234
 
+  mail:
+    host: smtp.gmail.com
+    port: 587
+    username: chasr0602@gmail.com
+    password: lhavwqgyhiybtnjr
+    properties:
+      mail.smtp.auth: true
+      mail.smtp.starttls.enable: true
+      mail.smtp.ssl.trust: smtp.gmail.com
+      mail.smtp.ssl.protocols: TLSv1.2
+      mail.debug: true
+
+    servlet:
+      multipart:
+        maxFileSize: 10MB
+        maxRequestSize: 30MB
+
   # JPA Setting
   jpa:
     open-in-view: true

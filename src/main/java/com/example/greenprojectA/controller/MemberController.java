@@ -9,17 +9,19 @@ import jakarta.servlet.http.HttpSession;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.mail.SimpleMailMessage;
+import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.web.authentication.logout.SecurityContextLogoutHandler;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.validation.BindingResult;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.ModelAttribute;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.*;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
+
+import java.util.Map;
+import java.util.Random;
 
 @Controller
 @RequiredArgsConstructor
@@ -28,6 +30,8 @@ import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 public class MemberController {
 
     private final MemberService memberService;
+    private final JavaMailSender mailSender;
+    private final HttpSession session;
 
     // 로그인 페이지
     @GetMapping("/memberLogin")
@@ -49,26 +53,23 @@ public class MemberController {
                                 Authentication authentication,
                                 RedirectAttributes rttr) {
 
-        String mid = authentication.getName();  // username 기준
+        String mid = authentication.getName();
         Member member = memberService.findByMid(mid);
         int level = member.getMemberLevel();
 
-        // 승인대기 or 탈퇴요청 회원은 로그인 차단
-        if (level == 1) {  // 가입대기
+        if (level == 1) {
             rttr.addFlashAttribute("message", "관리자의 승인이 필요합니다.");
             new SecurityContextLogoutHandler().logout(request, response, authentication);
             return "redirect:/member/memberLogin";
         }
 
-        if (level == 99) {  // 탈퇴 요청 회원
+        if (level == 99) {
             rttr.addFlashAttribute("message", "탈퇴 요청 상태이므로 로그인할 수 없습니다.");
             new SecurityContextLogoutHandler().logout(request, response, authentication);
             return "redirect:/member/memberLogin";
         }
 
-        // 로그인 성공 처리
         rttr.addFlashAttribute("message", member.getUsername() + "님 로그인 되었습니다.");
-
         HttpSession session = request.getSession();
         session.setAttribute("sName", member.getUsername());
 
@@ -118,9 +119,17 @@ public class MemberController {
                                    RedirectAttributes rttr,
                                    Model model) {
 
+        // 이메일 인증 확인
+        Boolean isVerified = (Boolean) session.getAttribute("emailVerified");
+        if (isVerified == null || !isVerified) {
+            rttr.addFlashAttribute("message", "이메일 인증을 완료해주세요.");
+            return "redirect:/member/memberJoin";
+        }
+
         // 비밀번호 확인 검증
         if (!memberDto.isPasswordConfirmed()) {
             bindingResult.rejectValue("confirmPassword", "error.confirmPassword", "비밀번호가 일치하지 않습니다.");
+            rttr.addFlashAttribute("message", "비밀번호가 일치하지 않습니다.");
         }
 
         // 유효성 검사 실패
@@ -129,9 +138,9 @@ public class MemberController {
             return "member/memberJoin";
         }
 
-        // 회원 등록 처리
         try {
             memberService.registerMember(memberDto);
+            session.removeAttribute("emailVerified"); // 인증 완료 후 제거
             rttr.addFlashAttribute("message", "회원가입 요청이 완료되었습니다. 관리자의 승인을 기다려주세요.");
             return "redirect:/member/memberLogin";
         } catch (IllegalStateException e) {
@@ -146,8 +155,44 @@ public class MemberController {
                               RedirectAttributes rttr) {
         String mid = authentication.getName();
         memberService.requestQuit(mid);
-        rttr.addFlashAttribute("message", "탈퇴 요청이 완료되었습니다. 7일의 유예기간 후 완전 삭제됩니다.");
+        rttr.addFlashAttribute("message", "탈퇴 요청이 완료되었습니다. 7일의 유예기간 후 완전히 삭제됩니다.");
         return "redirect:/member/memberLogout";
     }
 
+    // 이메일 인증번호 전송
+    @PostMapping("/sendCode")
+    @ResponseBody
+    public String sendEmailCode(@RequestBody Map<String, String> payload) {
+        String email = payload.get("email");
+        String code = String.valueOf(new Random().nextInt(900000) + 100000);
+        session.setAttribute("emailCode", code);
+
+        SimpleMailMessage message = new SimpleMailMessage();
+        message.setTo(email);
+        message.setSubject("[GreenProjectA] 이메일 인증코드");
+        message.setText("인증번호: " + code);
+
+        try {
+            mailSender.send(message);
+            return "ok";
+        } catch (Exception e) {
+            e.printStackTrace();
+            return "fail";
+        }
+    }
+
+    // 인증번호 확인
+    @PostMapping("/verifyCode")
+    @ResponseBody
+    public String verifyEmailCode(@RequestBody Map<String, String> payload) {
+        String inputCode = payload.get("code");
+        String savedCode = (String) session.getAttribute("emailCode");
+
+        if (savedCode != null && savedCode.equals(inputCode)) {
+            session.setAttribute("emailVerified", true);
+            return "success";
+        } else {
+            return "fail";
+        }
+    }
 }

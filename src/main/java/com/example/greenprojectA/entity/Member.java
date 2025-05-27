@@ -26,6 +26,12 @@ public class Member {
     @Column(nullable = false, unique = true)
     private String email;
 
+    @Column(length = 13)
+    private String tel;
+
+    @Column(length = 255)
+    private String address;
+
     @Column(name = "member_level", nullable = false)
     private int memberLevel;  // 0=ADMIN, 1=PENDING, 2=USER, 99=QUIT_PENDING
 
