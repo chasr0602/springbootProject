@@ -10,8 +10,8 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
-import java.util.List;
 import java.time.LocalDateTime;
+import java.util.List;
 
 @Service
 @RequiredArgsConstructor
@@ -41,7 +41,7 @@ public class MemberService {
             .password(passwordEncoder.encode(dto.getPassword()))
             .email(dto.getEmail())
             .tel(dto.getTel())
-            .address((dto.getAddress()))
+            .address(dto.getAddress())
             .company(company)
             .role(Role.PENDING)  // 가입대기 상태
             .build();
@@ -60,12 +60,22 @@ public class MemberService {
     return companyRepository.findAll();
   }
 
-  // 가입대기 회원 조회 (관리자 페이지)
+  // 전체 회원 조회 (관리자용)
+  public List<Member> findAll() {
+    return memberRepository.findAll();
+  }
+
+  // 아이디, 이름, 기업명으로 검색
+  public List<Member> searchByKeyword(String keyword) {
+    return memberRepository.findByMidContainingOrUsernameContainingOrCompany_NameContaining(keyword, keyword, keyword);
+  }
+
+  // 가입대기 회원만 조회 (필요 시)
   public List<Member> getPendingMembers() {
     return memberRepository.findByRole(Role.PENDING);
   }
 
-  // 관리자 승인 처리
+  // 관리자 승인 처리 (PENDING → USER)
   public void approveMember(Long memberId) {
     Member member = memberRepository.findById(memberId)
             .orElseThrow(() -> new IllegalArgumentException("해당 회원이 존재하지 않습니다."));
@@ -73,7 +83,15 @@ public class MemberService {
     memberRepository.save(member);
   }
 
-  // 탈퇴 요청 처리
+  // 역할(Role) 변경 (관리자에서 직접 지정)
+  public void changeRole(Long memberId, Role newRole) {
+    Member member = memberRepository.findById(memberId)
+            .orElseThrow(() -> new IllegalArgumentException("해당 회원이 존재하지 않습니다."));
+    member.setRole(newRole);
+    memberRepository.save(member);
+  }
+
+  // 탈퇴 요청 처리 (사용자 측)
   public void requestQuit(String mid) {
     Member member = memberRepository.findByMid(mid)
             .orElseThrow(() -> new IllegalArgumentException("회원 정보가 존재하지 않습니다."));
@@ -82,4 +100,14 @@ public class MemberService {
     memberRepository.save(member);
   }
 
+  // 탈퇴 상태 회원 삭제 (관리자에서만 사용)
+  public void deleteIfWithdrawn(Long memberId) {
+    Member member = memberRepository.findById(memberId)
+            .orElseThrow(() -> new IllegalArgumentException("해당 회원이 존재하지 않습니다."));
+    if (member.getRole() == Role.WITHDRAWN) {
+      memberRepository.delete(member);
+    } else {
+      throw new IllegalStateException("탈퇴 상태인 회원만 삭제할 수 있습니다.");
+    }
+  }
 }

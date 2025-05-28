@@ -14,4 +14,7 @@ public interface MemberRepository extends JpaRepository<Member, Long> {
 
   // 관리자 승인 기능을 위한 가입대기 회원 조회
   List<Member> findByRole(Role role);
+
+  // 회원 검색
+  List<Member> findByMidContainingOrUsernameContainingOrCompany_NameContaining(String mid, String username, String companyName);
 }

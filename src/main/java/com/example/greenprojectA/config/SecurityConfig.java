@@ -60,7 +60,7 @@ public class SecurityConfig {
             .requestMatchers("/", "/index", "/home", "/h").permitAll()
             .requestMatchers("/css/**", "/images/**", "/guest/**").permitAll()
             .requestMatchers("/member/idCheck").permitAll()
-            .requestMatchers("/member/memberLogin", "/member/login/error", "/member/memberJoin").permitAll()
+            .requestMatchers("/member/memberLogin", "/member/memberLoginOk", "/member/login/error", "/member/memberJoin").permitAll()
             .requestMatchers("/member/sendCode", "/member/verifyCode").permitAll()
             .requestMatchers("/admin/**").authenticated() // 관리자 권한은 member_level로 추후 필터링
             .requestMatchers("/member/memberMain").authenticated()

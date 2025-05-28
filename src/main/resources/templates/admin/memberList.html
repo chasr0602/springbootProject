@@ -1,10 +1,67 @@
 <!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <title>Title</title>
-</head>
-<body>
+<html lang="ko"
+      xmlns:th="http://www.thymeleaf.org"
+      xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
+      layout:decorate="~{layouts/exampleLayout}">
 
-</body>
+<div layout:fragment="content" class="container mt-5">
+    <h2 class="mb-4">회원 관리</h2>
+
+    <!-- 검색 폼 -->
+    <form th:action="@{/admin/member}" method="get" class="row mb-4">
+        <div class="col-auto">
+            <input type="text" name="keyword" class="form-control" placeholder="아이디, 이름, 소속 기업 검색"/>
+        </div>
+        <div class="col-auto">
+            <button type="submit" class="btn btn-outline-primary">검색</button>
+        </div>
+    </form>
+
+    <!-- 회원 리스트 -->
+    <table class="table table-bordered text-center align-middle">
+        <thead class="table-light">
+        <tr>
+            <th>번호</th>
+            <th>아이디</th>
+            <th>이름</th>
+            <th>소속 기업</th>
+            <th>이메일</th>
+            <th>전화번호</th>
+            <th>상태</th>
+            <th>처리</th>
+        </tr>
+        </thead>
+        <tbody>
+        <tr th:each="member, stat : ${memberList}">
+            <td th:text="${stat.index + 1}"></td>
+            <td th:text="${member.mid}"></td>
+            <td th:text="${member.username}"></td>
+            <td th:text="${member.company != null ? member.company.name : '미지정'}"></td>
+            <td th:text="${member.email}"></td>
+            <td th:text="${member.tel}"></td>
+            <td th:text="${member.role}"></td>
+            <td>
+                <!-- 가입대기 회원이면 승인 버튼 -->
+                <form th:if="${member.role.name() == 'PENDING'}" method="post" th:action="@{/admin/approve}">
+                    <input type="hidden" name="memberId" th:value="${member.id}"/>
+                    <button type="submit" class="btn btn-success btn-sm">승인</button>
+                </form>
+
+                <!-- 탈퇴회원이면 삭제 버튼 -->
+                <form th:if="${member.role.name() == 'WITHDRAWN'}" method="post" th:action="@{/admin/delete}">
+                    <input type="hidden" name="memberId" th:value="${member.id}"/>
+                    <button type="submit" class="btn btn-danger btn-sm">삭제</button>
+                </form>
+            </td>
+        </tr>
+        </tbody>
+    </table>
+
+    <!-- 메시지 alert -->
+    <th:block th:if="${message != null}">
+        <script th:inline="javascript">
+            alert([[${message}]]);
+        </script>
+    </th:block>
+</div>
 </html>

@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html lang="ko"
+      xmlns:th="http://www.thymeleaf.org"
+      xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
+      layout:decorate="~{layouts/exampleLayout}">
+
+<div layout:fragment="content" class="container mt-5">
+  <h2 class="mb-4">기업 관리</h2>
+
+  <!-- 기업 등록 폼 -->
+  <form th:action="@{/admin/company}" method="post" class="mb-5">
+    <div class="row mb-3">
+      <div class="col">
+        <input type="text" th:field="*{name}" class="form-control" placeholder="기업 이름" required>
+      </div>
+      <div class="col">
+        <input type="text" th:field="*{address}" class="form-control" placeholder="주소" required>
+      </div>
+      <div class="col-auto">
+        <button type="submit" class="btn btn-primary">기업 등록</button>
+      </div>
+    </div>
+  </form>
+
+  <!-- 기업 리스트 테이블 -->
+  <table class="table table-bordered text-center">
+    <thead class="table-light">
+    <tr>
+      <th>번호</th>
+      <th>이름</th>
+      <th>주소</th>
+    </tr>
+    </thead>
+    <tbody>
+    <tr th:each="company, stat : ${companyList}">
+      <td th:text="${stat.index + 1}"></td>
+      <td th:text="${company.name}"></td>
+      <td th:text="${company.address}"></td>
+    </tr>
+    </tbody>
+  </table>
+
+  <th:block th:if="${message != null}">
+    <script th:inline="javascript">
+      alert([[${message}]]);
+    </script>
+  </th:block>
+
+</div>
+

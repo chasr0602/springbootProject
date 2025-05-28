@@ -4,12 +4,26 @@
       xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
       layout:decorate="~{layouts/exampleLayout}">
 
-<div layout:fragment="content" class="container text-center">
-  <h2>관리자 메뉴</h2>
+<div layout:fragment="content" class="container text-center mt-5">
+  <h2 class="mb-4">관리자 메뉴</h2>
+
   <div>
-    <img src="/images/13.jpg" width="400px"/>
+    <img src="/images/13.jpg" width="400px" class="mb-4"/>
     <hr/>
-    <a th:href="@{/}" class="btn btn-success">홈으로</a>
+
+    <div class="d-grid gap-2 col-6 mx-auto mb-3">
+      <a th:href="@{/admin/member}" class="btn btn-primary">회원 관리</a>
+      <a th:href="@{/admin/company}" class="btn btn-primary">기업 리스트</a>
+    </div>
+
+    <a th:href="@{/}" class="btn btn-success mt-3">홈으로</a>
+
+    <th:block th:if="${message != null}">
+      <script th:inline="javascript">
+        alert([[${message}]]);
+      </script>
+    </th:block>
+
   </div>
 </div>
 

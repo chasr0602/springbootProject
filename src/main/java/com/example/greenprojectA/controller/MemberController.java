@@ -3,6 +3,7 @@ package com.example.greenprojectA.controller;
 import com.example.greenprojectA.dto.MemberDto;
 import com.example.greenprojectA.entity.Member;
 import com.example.greenprojectA.service.MemberService;
+import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.servlet.http.HttpSession;
@@ -36,7 +37,17 @@ public class MemberController {
 
     // 로그인 페이지
     @GetMapping("/memberLogin")
-    public String memberLoginGet() {
+    public String memberLoginGet(HttpServletRequest request, Model model) {
+        // 쿠키에서 rememberId 꺼내기
+        Cookie[] cookies = request.getCookies();
+        if (cookies != null) {
+            for (Cookie c : cookies) {
+                if (c.getName().equals("rememberId")) {
+                    model.addAttribute("savedId", c.getValue());
+                    break;
+                }
+            }
+        }
         return "member/memberLogin";
     }
 
@@ -49,15 +60,15 @@ public class MemberController {
 
     // 로그인 성공 후
     @GetMapping("/memberLoginOk")
-    public String memberLoginOk(HttpServletRequest request,
-                                HttpServletResponse response,
-                                Authentication authentication,
-                                RedirectAttributes rttr) {
+    public String memberLoginOkGet(Authentication authentication,
+                                   HttpServletRequest request,
+                                   HttpServletResponse response,
+                                   RedirectAttributes rttr) {
 
         String mid = authentication.getName();
         Member member = memberService.findByMid(mid);
 
-        Role role = member.getRole();  // 이제 enum 사용
+        Role role = member.getRole();
 
         if (role == Role.PENDING) {
             rttr.addFlashAttribute("message", "관리자의 승인이 필요합니다.");
