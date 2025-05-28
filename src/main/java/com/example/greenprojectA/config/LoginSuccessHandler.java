@@ -20,6 +20,6 @@ public class LoginSuccessHandler extends SavedRequestAwareAuthenticationSuccessH
         LoginFailHandler.failCountMap.remove(username);
         LoginFailHandler.lockUntilMap.remove(username);
 
-        super.onAuthenticationSuccess(request, response, authentication);
+        response.sendRedirect("/member/memberLoginOk");
     }
 }

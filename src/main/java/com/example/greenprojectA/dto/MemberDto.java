@@ -1,5 +1,6 @@
 package com.example.greenprojectA.dto;
 
+import com.example.greenprojectA.constant.Role;
 import jakarta.validation.constraints.*;
 import lombok.Getter;
 import lombok.Setter;
@@ -29,9 +30,12 @@ public class MemberDto {
   @NotNull(message = "소속 기업을 선택해야 합니다.")
   private Long companyId;
 
-  // 선택 입력 항목
   private String tel;
+
+  // 선택 입력 항목
   private String address;
+
+  private Role role;
 
   // 커스텀 검증: 비밀번호와 확인 비밀번호 일치 여부
   public boolean isPasswordConfirmed() {

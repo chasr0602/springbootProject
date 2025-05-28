@@ -1,5 +1,6 @@
 package com.example.greenprojectA.service;
 
+import com.example.greenprojectA.constant.Role;
 import com.example.greenprojectA.dto.MemberDto;
 import com.example.greenprojectA.entity.Company;
 import com.example.greenprojectA.entity.Member;
@@ -42,7 +43,7 @@ public class MemberService {
             .tel(dto.getTel())
             .address((dto.getAddress()))
             .company(company)
-            .memberLevel(1)  // 가입대기 상태
+            .role(Role.PENDING)  // 가입대기 상태
             .build();
 
     memberRepository.save(member);
@@ -61,14 +62,14 @@ public class MemberService {
 
   // 가입대기 회원 조회 (관리자 페이지)
   public List<Member> getPendingMembers() {
-    return memberRepository.findByMemberLevel(1);
+    return memberRepository.findByRole(Role.PENDING);
   }
 
   // 관리자 승인 처리
   public void approveMember(Long memberId) {
     Member member = memberRepository.findById(memberId)
             .orElseThrow(() -> new IllegalArgumentException("해당 회원이 존재하지 않습니다."));
-    member.setMemberLevel(2);
+    member.setRole(Role.USER);
     memberRepository.save(member);
   }
 
@@ -76,7 +77,7 @@ public class MemberService {
   public void requestQuit(String mid) {
     Member member = memberRepository.findByMid(mid)
             .orElseThrow(() -> new IllegalArgumentException("회원 정보가 존재하지 않습니다."));
-    member.setMemberLevel(99);
+    member.setRole(Role.WITHDRAWN);
     member.setQuitRequestedAt(LocalDateTime.now());
     memberRepository.save(member);
   }

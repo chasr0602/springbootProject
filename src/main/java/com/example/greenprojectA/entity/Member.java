@@ -3,6 +3,7 @@ package com.example.greenprojectA.entity;
 import jakarta.persistence.*;
 import lombok.*;
 import java.time.LocalDateTime;
+import com.example.greenprojectA.constant.Role;
 
 @Entity
 @Getter @Setter
@@ -32,8 +33,9 @@ public class Member {
     @Column(length = 255)
     private String address;
 
-    @Column(name = "member_level", nullable = false)
-    private int memberLevel;  // 0=ADMIN, 1=PENDING, 2=USER, 99=QUIT_PENDING
+    @Column(name = "role", nullable = false)
+    @Enumerated(EnumType.STRING)
+    private Role role;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "company_id")

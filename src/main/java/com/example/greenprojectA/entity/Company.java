@@ -15,4 +15,8 @@ public class Company {
 
     @Column(nullable = false)
     private String name;  // 기업명
+
+    @Column(nullable = false, length = 255)
+    private String location;  // 회사 위치
+
 }

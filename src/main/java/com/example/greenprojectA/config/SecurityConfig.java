@@ -21,6 +21,9 @@ public class SecurityConfig {
   private final LoginFailHandler customAuthenticationFailureHandler;
   private final LoginSuccessHandler customAuthenticationSuccessHandler;
 
+  @Autowired
+  private MemberLoginService memberLoginService;
+
   public SecurityConfig(LoginFailHandler customAuthenticationFailureHandler,
                         LoginSuccessHandler customAuthenticationSuccessHandler) {
     this.customAuthenticationFailureHandler = customAuthenticationFailureHandler;
@@ -48,10 +51,9 @@ public class SecurityConfig {
             .defaultSuccessUrl("/member/memberLoginOk", true)
             .failureHandler(customAuthenticationFailureHandler)   // ✅ 실패 핸들러 적용
             .successHandler(customAuthenticationSuccessHandler)   // ✅ 성공 핸들러 적용
-            .usernameParameter("username")
+            .usernameParameter("mid")
             .permitAll()
-    );
-
+            );
 
     // 요청 URL별 접근 권한 설정
     http.authorizeHttpRequests(request -> request
@@ -64,6 +66,8 @@ public class SecurityConfig {
             .requestMatchers("/member/memberMain").authenticated()
             .anyRequest().authenticated()
     );
+
+    http.userDetailsService(memberLoginService);
 
     // 권한 예외 처리
     http.exceptionHandling(exception -> exception

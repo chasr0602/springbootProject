@@ -19,6 +19,7 @@ import org.springframework.ui.Model;
 import org.springframework.validation.BindingResult;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
+import com.example.greenprojectA.constant.Role;
 
 import java.util.Map;
 import java.util.Random;
@@ -55,15 +56,16 @@ public class MemberController {
 
         String mid = authentication.getName();
         Member member = memberService.findByMid(mid);
-        int level = member.getMemberLevel();
 
-        if (level == 1) {
+        Role role = member.getRole();  // 이제 enum 사용
+
+        if (role == Role.PENDING) {
             rttr.addFlashAttribute("message", "관리자의 승인이 필요합니다.");
             new SecurityContextLogoutHandler().logout(request, response, authentication);
             return "redirect:/member/memberLogin";
         }
 
-        if (level == 99) {
+        if (role == Role.WITHDRAWN) {
             rttr.addFlashAttribute("message", "탈퇴 요청 상태이므로 로그인할 수 없습니다.");
             new SecurityContextLogoutHandler().logout(request, response, authentication);
             return "redirect:/member/memberLogin";
@@ -73,9 +75,9 @@ public class MemberController {
         HttpSession session = request.getSession();
         session.setAttribute("sName", member.getUsername());
 
-        String strLevel = switch (level) {
-            case 0 -> "관리자";
-            case 2 -> "일반회원";
+        String strLevel = switch (role) {
+            case ADMIN -> "관리자";
+            case USER -> "일반회원";
             default -> "알 수 없음";
         };
         session.setAttribute("strLevel", strLevel);
@@ -85,7 +87,7 @@ public class MemberController {
 
     // 회원 메인페이지
     @GetMapping("/memberMain")
-    public String memberMain() {
+    public String memberMain(@ModelAttribute("message") String message) {
         return "member/memberMain";
     }
 
@@ -109,7 +111,6 @@ public class MemberController {
     public String memberJoinForm(Model model) {
         MemberDto dto = new MemberDto();
         dto.setCompanyId(null);
-        System.out.println("==> companyId: " + dto.getCompanyId());
         model.addAttribute("memberDto", dto);
         model.addAttribute("companyList", memberService.getCompanyList());
         return "member/memberJoin";
@@ -133,6 +134,7 @@ public class MemberController {
         if (!memberDto.isPasswordConfirmed()) {
             bindingResult.rejectValue("confirmPassword", "error.confirmPassword", "비밀번호가 일치하지 않습니다.");
             rttr.addFlashAttribute("message", "비밀번호가 일치하지 않습니다.");
+            return "redirect:/member/memberJoin";
         }
 
         // 유효성 검사 실패
@@ -142,7 +144,6 @@ public class MemberController {
         }
 
         try {
-            System.out.println("==> 회원가입 시도: " + memberDto);
             memberService.registerMember(memberDto);
             session.removeAttribute("emailVerified");
             rttr.addFlashAttribute("message", memberDto.getUsername() + "님, 회원가입 요청이 완료되었습니다.\n관리자의 승인을 기다려주세요.");
@@ -150,6 +151,10 @@ public class MemberController {
         } catch (IllegalStateException e) {
             e.printStackTrace();
             rttr.addFlashAttribute("message", "중복된 아이디 또는 이메일입니다.");
+            return "redirect:/member/memberJoin";
+        } catch (Exception e) {
+            e.printStackTrace();
+            rttr.addFlashAttribute("message", "회원가입에 실패하였습니다. 관리자에게 문의해주세요.");
             return "redirect:/member/memberJoin";
         }
     }
