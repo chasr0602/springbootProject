@@ -9,6 +9,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
 import java.util.List;
 
@@ -57,10 +58,29 @@ public class AdminController {
         return "admin/company";
     }
 
-    // 기업 추가 처리
+    // 기업 등록, 수정 처리
     @PostMapping("/company")
-    public String addCompany(@ModelAttribute Company company) {
-        companyService.addCompany(company);
+    public String saveOrUpdateCompany(@ModelAttribute Company company, RedirectAttributes rttr) {
+        if (company.getIdx() == null) {
+            companyService.addCompany(company);
+            rttr.addFlashAttribute("message", "기업이 등록되었습니다.");
+        } else {
+            companyService.updateCompany(company);
+            rttr.addFlashAttribute("message", "기업이 수정되었습니다.");
+        }
         return "redirect:/admin/company";
     }
+
+    // 기업 삭제 처리
+    @PostMapping("/company/delete")
+    public String deleteCompany(@RequestParam Long id, RedirectAttributes rttr) {
+        try {
+            companyService.deleteCompany(id);
+            rttr.addFlashAttribute("message", "기업이 삭제되었습니다.");
+        } catch (IllegalStateException e) {
+            rttr.addFlashAttribute("message", e.getMessage());
+        }
+        return "redirect:/admin/company";
+    }
+
 }

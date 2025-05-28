@@ -7,18 +7,34 @@
 <div layout:fragment="content" class="container mt-5">
   <h2 class="mb-4">기업 관리</h2>
 
-  <!-- 기업 등록 폼 -->
-  <form th:action="@{/admin/company}" method="post" class="mb-5">
-    <div class="row mb-3">
-      <div class="col">
-        <input type="text" th:field="*{name}" class="form-control" placeholder="기업 이름" required>
+  <!-- 기업 등록/수정 폼 -->
+  <form id="companyForm" th:action="@{/admin/company}" method="post" th:object="${company}" class="mb-5" onsubmit="return mergeLocation();">
+    <input type="hidden" th:field="*{idx}" id="companyId"> <!-- 수정용 ID -->
+
+    <div class="form-group mb-3">
+      <label for="location">주소</label>
+
+      <div class="input-group mb-2">
+        <input type="text" id="sample6_postcode" placeholder="우편번호" class="form-control">
+        <button type="button" onclick="sample6_execDaumPostcode()" class="btn btn-success btn-sm ms-2">우편번호 찾기</button>
       </div>
-      <div class="col">
-        <input type="text" th:field="*{address}" class="form-control" placeholder="주소" required>
+
+      <input type="text" id="sample6_address" placeholder="주소" class="form-control mb-2">
+
+      <div class="input-group">
+        <input type="text" id="sample6_detailAddress" placeholder="상세주소" class="form-control me-1">
+        <input type="text" id="sample6_extraAddress" placeholder="동/건물명" class="form-control">
       </div>
-      <div class="col-auto">
-        <button type="submit" class="btn btn-primary">기업 등록</button>
-      </div>
+
+      <input type="hidden" th:field="*{location}" id="location">
+    </div>
+
+    <div class="form-group mb-3">
+      <input type="text" th:field="*{name}" id="companyName" class="form-control" placeholder="기업 이름" required>
+    </div>
+
+    <div class="text-end">
+      <button type="submit" class="btn btn-primary" id="submitBtn">기업 등록</button>
     </div>
   </form>
 
@@ -29,22 +45,94 @@
       <th>번호</th>
       <th>이름</th>
       <th>주소</th>
+      <th>관리</th>
     </tr>
     </thead>
     <tbody>
     <tr th:each="company, stat : ${companyList}">
       <td th:text="${stat.index + 1}"></td>
       <td th:text="${company.name}"></td>
-      <td th:text="${company.address}"></td>
+      <td th:text="${company.location}"></td>
+      <td>
+        <form th:action="@{/admin/company/delete}" method="post" style="display:inline;" onsubmit="return confirm('정말 삭제하시겠습니까?');">
+          <input type="hidden" name="id" th:value="${company.idx}" />
+          <button type="submit" class="btn btn-danger btn-sm">삭제</button>
+        </form>
+        <button type="button" class="btn btn-secondary btn-sm mt-1"
+                th:attr="data-id=${company.idx}, data-name='${company.name}', data-location='${company.location}'"
+                onclick="fillFormFromButton(this)">
+          수정
+        </button>
+      </td>
     </tr>
     </tbody>
   </table>
 
+  <!-- 메시지 alert -->
   <th:block th:if="${message != null}">
     <script th:inline="javascript">
       alert([[${message}]]);
     </script>
   </th:block>
-
 </div>
 
+<th:block layout:fragment="script">
+  <script src="https://t1.daumcdn.net/mapjsapi/bundle/postcode/prod/postcode.v2.js"></script>
+  <script th:inline="none">
+    function sample6_execDaumPostcode() {
+      new daum.Postcode({
+        oncomplete: function(data) {
+          let addr = data.userSelectedType === 'R' ? data.roadAddress : data.jibunAddress;
+          let extraAddr = '';
+
+          if (data.userSelectedType === 'R') {
+            if (data.bname !== '' && /[동|로|가]$/g.test(data.bname)) {
+              extraAddr += data.bname;
+            }
+            if (data.buildingName !== '' && data.apartment === 'Y') {
+              extraAddr += (extraAddr !== '' ? ', ' + data.buildingName : data.buildingName);
+            }
+          }
+
+          document.getElementById('sample6_postcode').value = data.zonecode;
+          document.getElementById('sample6_address').value = addr;
+          document.getElementById('sample6_extraAddress').value = extraAddr;
+          document.getElementById('sample6_detailAddress').focus();
+        }
+      }).open();
+    }
+
+    function mergeLocation() {
+      const post = document.getElementById('sample6_postcode').value.trim();
+      const addr = document.getElementById('sample6_address').value.trim();
+      const detail = document.getElementById('sample6_detailAddress').value.trim();
+      const extra = document.getElementById('sample6_extraAddress').value.trim();
+
+      const full = `(${post}) ${addr} ${detail ? detail : ''}${extra ? ' (' + extra + ')' : ''}`;
+      document.getElementById('location').value = full;
+      return true;
+    }
+
+    function fillFormFromButton(button) {
+      const id = button.getAttribute('data-id');
+      const name = button.getAttribute('data-name');
+      const location = button.getAttribute('data-location');
+
+      document.getElementById('companyId').value = id;
+      document.getElementById('companyName').value = name;
+
+      const match = location.match(/\((.*?)\)\s(.+?)\s(.+?)?(?:\s\((.*?)\))?$/);
+      if (match) {
+        const [, post, addr, detail, extra] = match;
+
+        document.getElementById('sample6_postcode').value = post;
+        document.getElementById('sample6_address').value = addr;
+        document.getElementById('sample6_detailAddress').value = detail;
+        document.getElementById('sample6_extraAddress').value = extra;
+        document.getElementById('submitBtn').textContent = '기업 수정';
+      }
+    }
+
+  </script>
+</th:block>
+</html>
