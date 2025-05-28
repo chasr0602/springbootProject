@@ -107,7 +107,10 @@ public class MemberController {
     // 회원가입 폼
     @GetMapping("/memberJoin")
     public String memberJoinForm(Model model) {
-        model.addAttribute("memberDto", new MemberDto());
+        MemberDto dto = new MemberDto();
+        dto.setCompanyId(null);
+        System.out.println("==> companyId: " + dto.getCompanyId());
+        model.addAttribute("memberDto", dto);
         model.addAttribute("companyList", memberService.getCompanyList());
         return "member/memberJoin";
     }
@@ -139,14 +142,23 @@ public class MemberController {
         }
 
         try {
+            System.out.println("==> 회원가입 시도: " + memberDto);
             memberService.registerMember(memberDto);
-            session.removeAttribute("emailVerified"); // 인증 완료 후 제거
-            rttr.addFlashAttribute("message", "회원가입 요청이 완료되었습니다. 관리자의 승인을 기다려주세요.");
+            session.removeAttribute("emailVerified");
+            rttr.addFlashAttribute("message", memberDto.getUsername() + "님, 회원가입 요청이 완료되었습니다.\n관리자의 승인을 기다려주세요.");
             return "redirect:/member/memberLogin";
         } catch (IllegalStateException e) {
+            e.printStackTrace();
             rttr.addFlashAttribute("message", "중복된 아이디 또는 이메일입니다.");
             return "redirect:/member/memberJoin";
         }
+    }
+
+    // 아이디 중복 체크
+    @ResponseBody
+    @GetMapping("/idCheck")
+    public String idCheck(@RequestParam String mid) {
+        return memberService.isMidExists(mid) ? "1" : "0";
     }
 
     // 탈퇴 요청 처리

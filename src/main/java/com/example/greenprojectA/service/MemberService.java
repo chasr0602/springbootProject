@@ -20,15 +20,15 @@ public class MemberService {
   private final CompanyRepository companyRepository;
   private final PasswordEncoder passwordEncoder;
 
+  // 아이디 중복 확인
+  public boolean isMidExists(String mid) {
+    return memberRepository.existsByMid(mid);
+  }
+
   // 회원가입 처리
   public void registerMember(MemberDto dto) {
-    // 아이디/이메일 중복 확인
     if (memberRepository.existsByMid(dto.getMid())) {
       throw new IllegalStateException("이미 사용 중인 아이디입니다.");
-    }
-
-    if (memberRepository.existsByEmail(dto.getEmail())) {
-      throw new IllegalStateException("이미 사용 중인 이메일입니다.");
     }
 
     Company company = companyRepository.findById(dto.getCompanyId())
@@ -39,6 +39,8 @@ public class MemberService {
             .username(dto.getUsername())
             .password(passwordEncoder.encode(dto.getPassword()))
             .email(dto.getEmail())
+            .tel(dto.getTel())
+            .address((dto.getAddress()))
             .company(company)
             .memberLevel(1)  // 가입대기 상태
             .build();
@@ -56,8 +58,6 @@ public class MemberService {
   public List<Company> getCompanyList() {
     return companyRepository.findAll();
   }
-
-  // MemberService.java 내부에 아래 2개 메서드 추가
 
   // 가입대기 회원 조회 (관리자 페이지)
   public List<Member> getPendingMembers() {

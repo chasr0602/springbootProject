@@ -23,10 +23,10 @@ public class Member {
     @Column(nullable = false)
     private String password;
 
-    @Column(nullable = false, unique = true)
+    @Column(nullable = false)
     private String email;
 
-    @Column(length = 13)
+    @Column(nullable = false, length = 13)
     private String tel;
 
     @Column(length = 255)
