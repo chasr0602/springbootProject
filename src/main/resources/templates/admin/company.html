@@ -10,6 +10,7 @@
   <!-- 기업 등록/수정 폼 -->
   <form id="companyForm" th:action="@{/admin/company}" method="post" th:object="${company}" class="mb-5" onsubmit="return mergeLocation();">
     <input type="hidden" th:field="*{idx}" id="companyId"> <!-- 수정용 ID -->
+    <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}" />
 
     <div class="form-group mb-3">
       <label for="location">주소</label>
@@ -56,10 +57,14 @@
       <td>
         <form th:action="@{/admin/company/delete}" method="post" style="display:inline;" onsubmit="return confirm('정말 삭제하시겠습니까?');">
           <input type="hidden" name="id" th:value="${company.idx}" />
+          <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}" />
           <button type="submit" class="btn btn-danger btn-sm">삭제</button>
         </form>
-        <button type="button" class="btn btn-secondary btn-sm mt-1"
-                th:attr="data-id=${company.idx}, data-name='${company.name}', data-location='${company.location}'"
+        <button type="button"
+                class="btn btn-secondary btn-sm mt-1"
+                th:data-id="${company.idx}"
+                th:data-name="${company.name}"
+                th:data-location="${company.location}"
                 onclick="fillFormFromButton(this)">
           수정
         </button>
@@ -67,16 +72,14 @@
     </tr>
     </tbody>
   </table>
-
-  <!-- 메시지 alert -->
-  <th:block th:if="${message != null}">
-    <script th:inline="javascript">
-      alert([[${message}]]);
-    </script>
-  </th:block>
 </div>
 
 <th:block layout:fragment="script">
+  <script th:inline="javascript">
+    if ([[${message != null}]]) {
+      alert([[${message}]].replaceAll('"', ''));
+    }
+  </script>
   <script src="https://t1.daumcdn.net/mapjsapi/bundle/postcode/prod/postcode.v2.js"></script>
   <script th:inline="none">
     function sample6_execDaumPostcode() {
@@ -121,18 +124,33 @@
       document.getElementById('companyId').value = id;
       document.getElementById('companyName').value = name;
 
-      const match = location.match(/\((.*?)\)\s(.+?)\s(.+?)?(?:\s\((.*?)\))?$/);
-      if (match) {
-        const [, post, addr, detail, extra] = match;
+      // 위치 분해: (우편번호) 주소 상세주소 (동/건물명)
+      const postMatch = location.match(/^\((\d{5})\)/); // (우편번호)
+      const post = postMatch ? postMatch[1] : '';
 
-        document.getElementById('sample6_postcode').value = post;
-        document.getElementById('sample6_address').value = addr;
-        document.getElementById('sample6_detailAddress').value = detail;
-        document.getElementById('sample6_extraAddress').value = extra;
-        document.getElementById('submitBtn').textContent = '기업 수정';
+      let addr = '', detail = '', extra = '';
+
+      // 괄호 제거한 문자열 분해
+      const locationWithoutPost = location.replace(/^\(\d{5}\)\s*/, '');
+      const extraMatch = locationWithoutPost.match(/\((.*?)\)$/); // 마지막 괄호: 동/건물명
+      if (extraMatch) {
+        extra = extraMatch[1];
       }
-    }
 
+      // 나머지 주소 문자열에서 extra 제거
+      const withoutExtra = locationWithoutPost.replace(/\s*\(.*?\)$/, '');
+      const parts = withoutExtra.split(/\s+/); // 공백 기준 분리
+
+      addr = parts.slice(0, 3).join(' ');
+      detail = parts.slice(3).join(' '); // 상세주소는 나머지
+
+      document.getElementById('sample6_postcode').value = post;
+      document.getElementById('sample6_address').value = addr;
+      document.getElementById('sample6_detailAddress').value = detail;
+      document.getElementById('sample6_extraAddress').value = extra;
+
+      document.getElementById('submitBtn').textContent = '기업 수정';
+    }
   </script>
 </th:block>
 </html>

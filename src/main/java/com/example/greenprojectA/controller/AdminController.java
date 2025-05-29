@@ -38,15 +38,22 @@ public class AdminController {
 
     // 회원가입 승인 (PENDING → USER)
     @PostMapping("/approve")
-    public String approveMember(@RequestParam Long memberId) {
+    public String approveMember(@RequestParam Long memberId, RedirectAttributes rttr) {
         memberService.changeRole(memberId, Role.USER);
+        rttr.addFlashAttribute("message", "가입 승인되었습니다.");
         return "redirect:/admin/member";
     }
 
+
     // 탈퇴 회원 처리 (WITHDRAWN → 삭제 or 유지)
     @PostMapping("/delete")
-    public String deleteWithdrawnMember(@RequestParam Long memberId) {
-        memberService.deleteIfWithdrawn(memberId);
+    public String deleteMember(@RequestParam("memberId") Long memberId, RedirectAttributes rttr) {
+        try {
+            memberService.deleteIfWithdrawn(memberId);
+            rttr.addFlashAttribute("message", "회원이 삭제되었습니다.");
+        } catch (IllegalStateException e) {
+            rttr.addFlashAttribute("message", e.getMessage());
+        }
         return "redirect:/admin/member";
     }
 
@@ -66,7 +73,7 @@ public class AdminController {
             rttr.addFlashAttribute("message", "기업이 등록되었습니다.");
         } else {
             companyService.updateCompany(company);
-            rttr.addFlashAttribute("message", "기업이 수정되었습니다.");
+            rttr.addFlashAttribute("message", "기업 정보가 수정되었습니다.");
         }
         return "redirect:/admin/company";
     }

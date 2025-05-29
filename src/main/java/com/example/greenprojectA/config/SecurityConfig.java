@@ -1,5 +1,6 @@
 package com.example.greenprojectA.config;
 
+import com.example.greenprojectA.service.MemberService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -20,9 +21,6 @@ public class SecurityConfig {
 
   private final LoginFailHandler customAuthenticationFailureHandler;
   private final LoginSuccessHandler customAuthenticationSuccessHandler;
-
-  @Autowired
-  private MemberLoginService memberLoginService;
 
   public SecurityConfig(LoginFailHandler customAuthenticationFailureHandler,
                         LoginSuccessHandler customAuthenticationSuccessHandler) {
@@ -49,8 +47,8 @@ public class SecurityConfig {
             .formLogin(form -> form
             .loginPage("/member/memberLogin")
             .defaultSuccessUrl("/member/memberLoginOk", true)
-            .failureHandler(customAuthenticationFailureHandler)   // ✅ 실패 핸들러 적용
-            .successHandler(customAuthenticationSuccessHandler)   // ✅ 성공 핸들러 적용
+            .failureHandler(customAuthenticationFailureHandler)
+            .successHandler(customAuthenticationSuccessHandler)
             .usernameParameter("mid")
             .permitAll()
             );
@@ -61,13 +59,12 @@ public class SecurityConfig {
             .requestMatchers("/css/**", "/images/**", "/guest/**").permitAll()
             .requestMatchers("/member/idCheck").permitAll()
             .requestMatchers("/member/memberLogin", "/member/memberLoginOk", "/member/login/error", "/member/memberJoin").permitAll()
+            .requestMatchers("/member/findId", "/member/findPwd").permitAll()
             .requestMatchers("/member/sendCode", "/member/verifyCode").permitAll()
-            .requestMatchers("/admin/**").authenticated() // 관리자 권한은 member_level로 추후 필터링
+            .requestMatchers("/admin/**").authenticated()
             .requestMatchers("/member/memberMain").authenticated()
             .anyRequest().authenticated()
     );
-
-    http.userDetailsService(memberLoginService);
 
     // 권한 예외 처리
     http.exceptionHandling(exception -> exception

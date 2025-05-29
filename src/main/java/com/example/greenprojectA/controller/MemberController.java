@@ -12,6 +12,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.mail.SimpleMailMessage;
 import org.springframework.mail.javamail.JavaMailSender;
+import org.springframework.security.authentication.LockedException;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.web.authentication.logout.SecurityContextLogoutHandler;
@@ -23,7 +24,9 @@ import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 import com.example.greenprojectA.constant.Role;
 
 import java.util.Map;
+import java.util.Optional;
 import java.util.Random;
+import java.util.UUID;
 
 @Controller
 @RequiredArgsConstructor
@@ -37,7 +40,9 @@ public class MemberController {
 
     // 로그인 페이지
     @GetMapping("/memberLogin")
-    public String memberLoginGet(HttpServletRequest request, Model model) {
+    public String memberLoginGet(HttpServletRequest request, Model model, @ModelAttribute("message") String message) {
+        System.out.println("✅ memberLoginGet - message = " + message);
+
         // 쿠키에서 rememberId 꺼내기
         Cookie[] cookies = request.getCookies();
         if (cookies != null) {
@@ -53,8 +58,21 @@ public class MemberController {
 
     // 로그인 실패 시
     @GetMapping("/login/error")
-    public String loginErrorGet(RedirectAttributes rttr) {
-        rttr.addFlashAttribute("loginErrorMsg", "아이디 또는 비밀번호가 일치하지 않습니다.");
+    public String loginError(HttpServletRequest request, RedirectAttributes rttr) {
+        Exception exception = (Exception) request.getSession().getAttribute("SPRING_SECURITY_LAST_EXCEPTION");
+        String customMessage = (String) request.getSession().getAttribute("customLoginError");
+
+        String errorMessage = "아이디 또는 비밀번호가 일치하지 않습니다.";
+        if (customMessage != null) {
+            errorMessage = customMessage;
+            request.getSession().removeAttribute("customLoginError");
+        } else if (exception instanceof LockedException) {
+            errorMessage = exception.getMessage();
+        }
+
+        rttr.addFlashAttribute("message", errorMessage);
+        request.getSession().removeAttribute("SPRING_SECURITY_LAST_EXCEPTION");
+
         return "redirect:/member/memberLogin";
     }
 
@@ -82,8 +100,16 @@ public class MemberController {
             return "redirect:/member/memberLogin";
         }
 
-        rttr.addFlashAttribute("message", member.getUsername() + "님 로그인 되었습니다.");
         HttpSession session = request.getSession();
+        if (session.getAttribute("tempPwdUser") != null &&
+                session.getAttribute("tempPwdUser").equals(mid)) {
+
+            rttr.addFlashAttribute("message", "임시 비밀번호로 로그인되었습니다.\n보안을 위해 비밀번호를 변경해주세요.");
+            session.removeAttribute("tempPwdUser");
+            return "redirect:/member/memberLogin";
+        }
+
+        rttr.addFlashAttribute("message", member.getUsername() + "님 로그인 되었습니다.");
         session.setAttribute("sName", member.getUsername());
 
         String strLevel = switch (role) {
@@ -223,4 +249,105 @@ public class MemberController {
             return "fail";
         }
     }
+
+    // 아이디 찾기 팝업
+    @GetMapping("/findId")
+    public String showFindIdForm() {
+        return "member/findId"; // Thymeleaf 템플릿 경로
+    }
+
+    // 아이디 찾기 처리
+    @PostMapping("/findId")
+    public String findId(@RequestParam String username,
+                         @RequestParam String email,
+                         Model model) {
+
+        Optional<Member> memberOpt = memberService.findByUsernameAndEmail(username, email);
+        if (memberOpt.isPresent()) {
+            model.addAttribute("foundId", memberOpt.get().getMid());
+        } else {
+            model.addAttribute("notFound", true);
+        }
+        return "member/findId";
+    }
+
+    // 비밀번호 찾기 팝업
+    @GetMapping("/findPwd")
+    public String showFindPwdForm() {
+        return "member/findPwd"; // Thymeleaf 템플릿 경로
+    }
+
+    // 비밀번호 찾기 처리
+    @PostMapping("/findPwd")
+    public String findPwd(@RequestParam String mid,
+                          @RequestParam String email,
+                          RedirectAttributes rttr) {
+
+        Optional<Member> memberOpt = memberService.findByMidAndEmail(mid, email);
+
+        if (memberOpt.isPresent()) {
+            String tempPwd = UUID.randomUUID().toString().substring(0, 8); // 임시비번 8자리
+
+            memberService.updatePassword(mid, tempPwd);
+
+            // 임시비번 발송
+            SimpleMailMessage message = new SimpleMailMessage();
+            message.setTo(email);
+            message.setSubject("[GreenProjectA] 임시 비밀번호 안내");
+            message.setText("임시 비밀번호: " + tempPwd + "\n\n로그인 후 반드시 비밀번호를 변경해주세요.");
+
+            try {
+                mailSender.send(message);
+                session.setAttribute("tempPwdUser", mid);
+                rttr.addFlashAttribute("message", "임시 비밀번호가 이메일로 발송되었습니다.\n보안을 위해 로그인 후 비밀번호를 변경해주세요.");
+                return "redirect:/member/memberLogin";
+            } catch (Exception e) {
+                e.printStackTrace();
+                rttr.addFlashAttribute("message", "이메일 전송에 실패했습니다.");
+                return "redirect:/member/findPwd";
+            }
+        } else {
+            rttr.addFlashAttribute("message", "일치하는 회원 정보가 없습니다.");
+            return "redirect:/member/findPwd";
+        }
+    }
+
+    // 인증번호 확인
+    @PostMapping("/verifyPwdCode")
+    @ResponseBody
+    public String verifyPwdCode(@RequestBody Map<String, String> payload) {
+        String inputCode = payload.get("code");
+        String savedCode = (String) session.getAttribute("findPwdCode");
+
+        if (savedCode != null && savedCode.equals(inputCode)) {
+            session.setAttribute("findPwdVerified", true);
+            return "success";
+        } else {
+            return "fail";
+        }
+    }
+
+    // 비밀번호 재설정
+    @PostMapping("/resetPassword")
+    public String resetPassword(@RequestParam String newPwd,
+                                RedirectAttributes rttr) {
+
+        Boolean verified = (Boolean) session.getAttribute("findPwdVerified");
+        String mid = (String) session.getAttribute("resetTargetMid");
+
+        if (verified != null && verified && mid != null) {
+            memberService.updatePassword(mid, newPwd); // 암호화까지 처리됨
+            session.removeAttribute("findPwdVerified");
+            session.removeAttribute("resetTargetMid");
+            session.removeAttribute("findPwdCode");
+
+            rttr.addFlashAttribute("message", "비밀번호가 성공적으로 변경되었습니다.");
+            return "redirect:/member/memberLogin";
+        } else {
+            rttr.addFlashAttribute("message", "비정상적인 접근입니다. 다시 시도해주세요.");
+            return "redirect:/member/memberLogin";
+        }
+    }
+
+
 }

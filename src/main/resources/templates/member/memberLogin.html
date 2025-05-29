@@ -16,7 +16,7 @@
 <div layout:fragment="content" class="container mt-5" style="max-width: 500px;">
   <h2 class="text-center mb-4">로그인</h2>
 
-  <th:block th:if="${message != null}">
+  <th:block th:if="${message != null and !#strings.isEmpty(message)}">
     <script th:inline="javascript">
       alert([[${message}]]);
     </script>
@@ -34,7 +34,7 @@
     <div class="form-group mb-3">
       <label for="password">비밀번호</label>
       <input type="password" id="password" name="password" class="form-control"
-             placeholder="비밀번호 입력" required>
+             placeholder="비밀번호를 입력해주세요" required>
     </div>
 
     <div class="form-check mb-3">
@@ -46,33 +46,46 @@
     <div class="mb-3">
       <p th:if="${loginErrorMsg}" class="error" th:text="${loginErrorMsg}"></p>
       <button type="submit" class="btn btn-success w-100">로그인</button>
-      <button type="button" class="btn btn-secondary w-100 mt-2"
-              onclick="location.href='/member/memberJoin'">회원가입</button>
     </div>
   </form>
+  <div class="text-center mt-3" style="font-size: 0.9rem;">
+    <a href="#" onclick="openPopup('/member/findId', 500, 500)">아이디 찾기</a>
+    &nbsp;|&nbsp;
+    <a href="#" onclick="openPopup('/member/findPwd', 500, 600)">비밀번호 찾기</a>
+    &nbsp;|&nbsp;
+    <a href="/member/memberJoin" class="text-decoration-none">회원가입</a>
+  </div>
 </div>
-<script>
-  window.addEventListener("DOMContentLoaded", () => {
-    // 로그인 버튼 클릭 시 쿠키 저장
-    const loginBtn = document.querySelector("button[type='submit']");
-    loginBtn.addEventListener("click", () => {
-      const mid = document.getElementById("mid").value;
-      const checked = document.getElementById("rememberMe").checked;
+<th:block layout:fragment="script">
+  <script>
+    window.addEventListener("DOMContentLoaded", () => {
+      // 로그인 버튼 클릭 시 쿠키 저장
+      const loginBtn = document.querySelector("button[type='submit']");
+      loginBtn.addEventListener("click", () => {
+        const mid = document.getElementById("mid").value;
+        const checked = document.getElementById("rememberMe").checked;
 
-      if (checked) {
-        document.cookie = `rememberId=${encodeURIComponent(mid)}; path=/; max-age=${60 * 60 * 24 * 30}`;
-      } else {
-        document.cookie = `rememberId=; path=/; max-age=0`;
+        if (checked) {
+          document.cookie = `rememberId=${encodeURIComponent(mid)}; path=/; max-age=${60 * 60 * 24 * 30}`;
+        } else {
+          document.cookie = `rememberId=; path=/; max-age=0`;
+        }
+      });
+
+      // 페이지 진입 시 쿠키 복원
+      const cookies = document.cookie.split("; ");
+      const rememberIdCookie = cookies.find(row => row.startsWith("rememberId="));
+      if (rememberIdCookie) {
+        document.getElementById("mid").value = decodeURIComponent(rememberIdCookie.split("=")[1]);
+        document.getElementById("rememberMe").checked = true;
       }
     });
 
-    // 페이지 진입 시 쿠키 복원
-    const cookies = document.cookie.split("; ");
-    const rememberIdCookie = cookies.find(row => row.startsWith("rememberId="));
-    if (rememberIdCookie) {
-      document.getElementById("mid").value = decodeURIComponent(rememberIdCookie.split("=")[1]);
-      document.getElementById("rememberMe").checked = true;
+    function openPopup(url, width, height) {
+      const left = (window.screen.width / 2) - (width / 2);
+      const top = (window.screen.height / 2) - (height / 2);
+      window.open(url, '_blank', `width=${width},height=${height},top=${top},left=${left},resizable=no`);
     }
-  });
-</script>
+  </script>
+</th:block>
 </html>

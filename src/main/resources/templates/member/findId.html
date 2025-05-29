@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html lang="ko"
+      xmlns:th="http://www.thymeleaf.org"
+      xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
+      layout:decorate="~{layouts/exampleLayout}">
+
+<th:block layout:fragment="css">
+  <style>
+    html, body {
+      height: 100%;
+      margin: 0;
+      padding: 0;
+    }
+    body {
+      display: flex;
+      flex-direction: column;
+      min-height: 100vh;
+    }
+    main {
+      flex: 1;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      padding: 60px 0;
+    }
+    .form-box {
+      width: 100%;
+      max-width: 400px;
+      padding: 30px;
+      background: #fff;
+      border: 1px solid #eee;
+      border-radius: 12px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+      margin: 0 auto;
+    }
+  </style>
+</th:block>
+
+<div layout:fragment="content">
+  <main>
+    <div class="form-box">
+      <h3 class="text-center mb-4">
+        <img th:src="@{/images/logo.png}" width="150px"/><br/>
+        <span style="color: #2e7d32; font-weight: bold;">아이디찾기</span>
+      </h3>
+
+      <th:block th:if="${message != null}">
+        <script th:inline="javascript">
+          alert([[${message}]]);
+        </script>
+      </th:block>
+
+      <form th:action="@{/member/findId}" method="post" onsubmit="return validateForm()">
+        <div class="mb-3">
+          <label for="name" class="form-label">이름</label>
+          <input type="text" name="username" id="name" class="form-control">
+        </div>
+
+        <div class="mb-3">
+          <label for="email1" class="form-label">이메일</label>
+          <div class="input-group">
+            <input type="text" name="email1" id="email1" class="form-control" placeholder="이메일 아이디">
+            <span class="input-group-text">@</span>
+            <select name="email2" id="email2" class="form-select">
+              <option value="naver.com">naver.com</option>
+              <option value="hanmail.net">hanmail.net</option>
+              <option value="gmail.com">gmail.com</option>
+              <option value="daum.net">daum.net</option>
+              <option value="yahoo.com">yahoo.com</option>
+              <option value="hotmail.com">hotmail.com</option>
+              <option value="nate.com">nate.com</option>
+            </select>
+          </div>
+        </div>
+        <input type="hidden" id="fullEmail" name="email">
+        <button type="submit" class="btn btn-success w-100 mt-4">아이디 찾기</button>
+
+        <div th:if="${foundId != null}" class="alert alert-success mt-4 text-center">
+          회원님의 아이디는 <strong th:text="${foundId}"></strong> 입니다.
+        </div>
+        <div th:if="${notFound}" class="alert alert-danger mt-4 text-center">
+          일치하는 회원 정보가 없습니다.
+        </div>
+      </form>
+    </div>
+  </main>
+</div>
+
+<th:block layout:fragment="script">
+  <script>
+    function validateForm() {
+      const name = document.getElementById("name").value.trim();
+      const email1 = document.getElementById("email1").value.trim();
+      const email2 = document.getElementById("email2").value;
+      const fullEmail = email1 + "@" + email2;
+      document.getElementById("fullEmail").value = fullEmail;
+
+      const namePattern = /^[\uAC00-\uD7A3a-zA-Z]+$/;
+      const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+      if (!name) {
+        alert("이름을 입력해주세요.");
+        return false;
+      }
+      if (!namePattern.test(name)) {
+        alert("이름은 한글 또는 영문만 입력 가능합니다.");
+        return false;
+      }
+      if (!email1) {
+        alert("이메일을 입력해주세요.");
+        return false;
+      }
+      if (!emailPattern.test(fullEmail)) {
+        alert("이메일 형식이 올바르지 않습니다.");
+        return false;
+      }
+      return true;
+    }
+  </script>
+</th:block>
+</html>

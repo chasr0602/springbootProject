@@ -10,6 +10,8 @@ import java.util.List;
 public interface MemberRepository extends JpaRepository<Member, Long> {
 
   Optional<Member> findByMid(String mid);
+  Optional<Member> findByUsernameAndEmail(String username, String email);
+  Optional<Member> findByMidAndEmail(String mid, String email);
 
   boolean existsByMid(String mid);
   boolean existsByEmail(String email);

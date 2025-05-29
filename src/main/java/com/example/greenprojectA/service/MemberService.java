@@ -1,5 +1,6 @@
 package com.example.greenprojectA.service;
 
+import com.example.greenprojectA.config.CustomUserDetails;
 import com.example.greenprojectA.constant.Role;
 import com.example.greenprojectA.dto.MemberDto;
 import com.example.greenprojectA.entity.Company;
@@ -7,15 +8,21 @@ import com.example.greenprojectA.entity.Member;
 import com.example.greenprojectA.repository.CompanyRepository;
 import com.example.greenprojectA.repository.MemberRepository;
 import lombok.RequiredArgsConstructor;
+import org.springframework.security.authentication.LockedException;
+import org.springframework.security.core.userdetails.UserDetailsService;
+import org.springframework.security.core.userdetails.UserDetails;
+import org.springframework.security.core.userdetails.UsernameNotFoundException;
+import org.springframework.security.core.userdetails.User;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Optional;
 
 @Service
 @RequiredArgsConstructor
-public class MemberService {
+public class MemberService implements UserDetailsService {
 
   private final MemberRepository memberRepository;
   private final CompanyRepository companyRepository;
@@ -53,6 +60,33 @@ public class MemberService {
   public Member findByMid(String mid) {
     return memberRepository.findByMid(mid)
             .orElseThrow(() -> new IllegalArgumentException("해당 유저를 찾을 수 없습니다."));
+  }
+
+  // 로그인 실패 처리
+  @Override
+  public UserDetails loadUserByUsername(String mid) throws UsernameNotFoundException {
+    Member member = memberRepository.findByMid(mid)
+            .orElseThrow(() -> new UsernameNotFoundException("아이디 또는 비밀번호가 일치하지 않습니다."));
+
+    return new CustomUserDetails(member);
+  }
+
+  // 아이디 찾기
+  public Optional<Member> findByUsernameAndEmail(String username, String email) {
+    return memberRepository.findByUsernameAndEmail(username, email);
+  }
+
+  // 비밀번호 재설정 - 아이디 + 이메일 확인
+  public Optional<Member> findByMidAndEmail(String mid, String email) {
+    return memberRepository.findByMidAndEmail(mid, email);
+  }
+
+  // 비밀번호 변경
+  public void updatePassword(String mid, String newPwd) {
+    Member member = memberRepository.findByMid(mid)
+            .orElseThrow(() -> new IllegalArgumentException("해당 아이디 없음"));
+    member.setPassword(passwordEncoder.encode(newPwd));
+    memberRepository.save(member);
   }
 
   // 기업 목록 조회 (회원가입용 드롭다운)

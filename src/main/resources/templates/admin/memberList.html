@@ -43,13 +43,13 @@
             <td>
                 <!-- 가입대기 회원이면 승인 버튼 -->
                 <form th:if="${member.role.name() == 'PENDING'}" method="post" th:action="@{/admin/approve}">
-                    <input type="hidden" name="memberId" th:value="${member.id}"/>
+                    <input type="hidden" name="memberId" th:value="${member.idx}"/>
                     <button type="submit" class="btn btn-success btn-sm">승인</button>
                 </form>
 
                 <!-- 탈퇴회원이면 삭제 버튼 -->
                 <form th:if="${member.role.name() == 'WITHDRAWN'}" method="post" th:action="@{/admin/delete}">
-                    <input type="hidden" name="memberId" th:value="${member.id}"/>
+                    <input type="hidden" name="memberId" th:value="${member.idx}"/>
                     <button type="submit" class="btn btn-danger btn-sm">삭제</button>
                 </form>
             </td>

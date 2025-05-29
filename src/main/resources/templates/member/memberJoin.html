@@ -6,8 +6,62 @@
 
 <th:block layout:fragment="css">
   <style>
+    html, body {
+      height: 100%;
+      margin: 0;
+      padding: 0;
+    }
+    body {
+      display: flex;
+      flex-direction: column;
+      min-height: 100vh;
+    }
+    .container {
+      flex: 1;
+      max-width: 700px; /* ← 넓이 늘림 */
+      padding: 40px 30px;
+      margin: 60px auto;
+      background: #fff;
+      border: 1px solid #eee;
+      border-radius: 12px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+    }
+
+    /* 버튼 둥글게 */
+    button, .btn {
+      border-radius: 12px !important;
+    }
+
+    /* 아이디 + 버튼 가로정렬 */
+    .id-check-wrapper {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    /* 에러 메시지 */
     .fieldError {
       color: #bd2130;
+      font-size: 0.875em;
+    }
+
+    /* input-group 간격 */
+    .input-group > .form-control,
+    .input-group > .form-select {
+      flex: 1;
+    }
+
+    /* input-group 안 버튼 위치 조정 */
+    .input-group .btn {
+      white-space: nowrap;
+    }
+
+    #midBtn {
+      white-space: nowrap;
+      min-width: 100px;
+      padding: 6px 14px;
+      font-size: 0.9rem;
+      line-height: 1.5;
     }
   </style>
 </th:block>
@@ -20,8 +74,10 @@
 
     <div class="form-group mb-3">
       <label for="mid">아이디</label>
-      <input type="text" th:field="*{mid}" id="mid" class="form-control" placeholder="아이디를 입력하세요">
-      <button type="button" id="midBtn" onclick="idCheck()" class="btn btn-secondary btn-sm ms-2 rounded">아이디중복체크</button>
+      <div class="d-flex align-items-center gap-2">
+        <input type="text" th:field="*{mid}" id="mid" class="form-control" placeholder="아이디를 입력하세요">
+        <button type="button" id="midBtn" class="btn btn-secondary btn-sm" onclick="idCheck()">중복체크</button>
+      </div>
       <p th:if="${#fields.hasErrors('mid')}" th:errors="*{mid}" class="fieldError"></p>
     </div>
 
@@ -39,15 +95,25 @@
 
     <div class="form-group mb-3">
       <label for="username">이름</label>
-      <input type="text" th:field="*{username}" class="form-control" placeholder="이름을 입력하세요">
+      <input type="text" th:field="*{username}" id="username" class="form-control" placeholder="이름을 입력하세요">
       <p th:if="${#fields.hasErrors('username')}" th:errors="*{username}" class="fieldError"></p>
     </div>
 
     <div class="form-group mb-3">
       <label for="email">이메일</label>
       <div class="input-group">
-        <input type="email" th:field="*{email}" id="emailInput" class="form-control" placeholder="이메일을 입력해주세요">
-        <button type="button" class="btn btn-success ms-2" onclick="sendEmailCode()">인증번호 받기</button>
+        <input type="text" id="email1" class="form-control" placeholder="이메일 앞자리">
+        <span class="input-group-text">@</span>
+        <select id="email2" class="form-select">
+          <option>naver.com</option>
+          <option>hanmail.net</option>
+          <option>gmail.com</option>
+          <option>daum.net</option>
+          <option>yahoo.com</option>
+          <option>hotmail.com</option>
+          <option>nate.com</option>
+        </select>
+        <button type="button" class="btn btn-success ms-2" onclick="sendEmailCode()" id="certificationBtn">인증번호 받기</button>
         <div id="spinner" class="ms-2" style="display: none;">
           <div class="spinner-border text-success spinner-border-sm" role="status">
             <span class="visually-hidden">Loading...</span>
@@ -57,7 +123,6 @@
       <p th:if="${#fields.hasErrors('email')}" th:errors="*{email}" class="fieldError"></p>
     </div>
 
-    <!-- 인증코드 입력란 -->
     <div class="form-group mb-3" id="emailCodeDiv" style="display: none;">
       <label for="emailCode">인증번호 입력</label>
       <div class="input-group">
@@ -67,7 +132,7 @@
       <small id="emailStatus" class="text-success mt-1"></small>
     </div>
 
-    <!-- 인증 확인 상태 저장용 -->
+    <input type="hidden" th:field="*{email}" id="emailInput">
     <input type="hidden" id="emailVerified" name="emailVerified" value="false">
 
     <div class="form-group mb-3">
@@ -113,10 +178,8 @@
       <input type="hidden" th:field="*{tel}" id="tel">
     </div>
 
-    <!-- 선택 입력 항목 -->
     <hr/>
     <h5 class="mt-4">선택 입력 항목</h5>
-    <!-- 주소 API -->
     <div class="form-group mb-3">
       <label for="address">주소</label>
       <div class="input-group mb-2">
@@ -201,8 +264,17 @@
     }
 
     function sendEmailCode() {
-      const email = document.getElementById("emailInput").value.trim();
-      if (!email) return alert("이메일을 입력해주세요.");
+      const email1 = document.getElementById("email1").value.trim();
+      const email2 = document.getElementById("email2").value;
+      const fullEmail = email1 + "@" + email2;
+
+      if (!email1) {
+        alert("이메일을 입력해주세요.");
+        return;
+      }
+
+      // 이메일을 hidden input에도 넣어줌
+      document.getElementById("emailInput").value = fullEmail;
 
       const spinner = document.getElementById("spinner");
       spinner.style.display = "inline-block";
@@ -210,7 +282,7 @@
       fetch("/member/sendCode", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email })
+        body: JSON.stringify({ email: fullEmail })
       })
       .then(res => res.text())
       .then(result => {
@@ -223,7 +295,7 @@
         }
       })
       .catch(() => {
-        spinner.style.display = "none"; // ✅ 에러 시에도 숨김
+        spinner.style.display = "none";
         alert("이메일 전송 중 오류가 발생했습니다.");
       });
     }
@@ -238,7 +310,7 @@
       .then(res => res.text())
       .then(result => {
         if (result === "success") {
-          document.getElementById("emailStatus").textContent = "이메일 인증 완료!";
+          alert("이메일 인증 완료!");
           document.getElementById("emailVerified").value = "true";
         } else {
           alert("인증번호가 올바르지 않습니다.");
