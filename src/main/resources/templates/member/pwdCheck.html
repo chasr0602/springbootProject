@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org"
+      xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
+      layout:decorate="~{layouts/exampleLayout}">
+
+<th:block layout:fragment="css">
+    <style>
+        .container {
+          max-width: 500px;
+          margin: 60px auto;
+          padding: 30px;
+          border: 1px solid #eee;
+          border-radius: 12px;
+          box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+          background: #fff;
+        }
+    </style>
+</th:block>
+
+<div layout:fragment="content" class="container">
+    <h3 class="text-center mb-4">비밀번호 확인</h3>
+
+    <th:block th:if="${message != null}">
+        <script th:inline="javascript">
+            alert([[${message}]]);
+        </script>
+    </th:block>
+
+    <form method="post" th:action="@{/member/mypage/checkPwd}">
+        <div class="mb-3">
+            <label for="password" class="form-label">비밀번호 입력</label>
+            <input type="password" id="password" name="password" class="form-control" required>
+        </div>
+        <button type="submit" class="btn btn-success w-100">확인</button>
+    </form>
+</div>

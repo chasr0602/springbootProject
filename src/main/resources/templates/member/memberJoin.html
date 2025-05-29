@@ -113,7 +113,7 @@
           <option>hotmail.com</option>
           <option>nate.com</option>
         </select>
-        <button type="button" class="btn btn-success ms-2" onclick="sendEmailCode()" id="certificationBtn">인증번호 받기</button>
+        <button type="button" class="btn btn-success ms-2" onclick="sendEmailCode()" id="certificationBtn">인증번호받기</button>
         <div id="spinner" class="ms-2" style="display: none;">
           <div class="spinner-border text-success spinner-border-sm" role="status">
             <span class="visually-hidden">Loading...</span>
@@ -137,8 +137,8 @@
 
     <div class="form-group mb-3">
       <label for="companyId">소속 기업</label>
-      <select name="companyId" class="form-control">
-        <option value="" th:selected="${memberDto.companyId == null}">선택하세요</option>
+      <select th:field="*{companyId}" class="form-control">
+      <option value="" th:selected="${memberDto.companyId == null}">선택하세요</option>
         <option th:each="company : ${companyList}"
                 th:value="${company.idx}"
                 th:text="${company.name}">
@@ -348,7 +348,10 @@
       const pwd = document.getElementById("password").value.trim();
       const confirmPwd = document.getElementById("confirmPassword").value.trim();
       const username = document.getElementById("username").value.trim();
-      const email = document.getElementById("emailInput").value.trim();
+      const email1 = document.getElementById("email1").value.trim();
+      const email2 = document.getElementById("email2").value;
+      const email = email1 + "@" + email2;
+      document.getElementById("emailInput").value = email;
       const emailVerified = document.getElementById("emailVerified").value;
       const tel1 = document.getElementById("tel1").value.trim();
       const tel2 = document.getElementById("tel2").value.trim();
@@ -358,7 +361,7 @@
       const regMid = /^[a-zA-Z0-9_-]{4,20}$/;
       const regPwd = /^[a-zA-Z0-9!@#$%^&*]{4,16}$/;
       const regName = /^[가-힣a-zA-Z]+$/;
-      const regEmail = /^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$/;
+      const regEmail = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
       const regTel = /^(01[016789]|02|0[3-6][1-5])-\d{3,4}-\d{4}$/;
 
       if (!mid) {
@@ -397,7 +400,7 @@
         alert("이름은 한글 또는 영문만 입력 가능합니다.");
         return false;
       }
-      if (!email) {
+      if (!email1) {
         alert("이메일을 입력해주세요.");
         return false;
       }
@@ -406,12 +409,7 @@
         return false;
       }
       if (emailVerified !== "true") {
-        alert("이메일 인증을 완료해주세요.");
-        return false;
-      }
-
-      if (!companyId) {
-        alert("소속 기업을 선택해주세요.");
+        alert("인증번호받기 버튼을 눌러 인증을 완료해주세요.");
         return false;
       }
 

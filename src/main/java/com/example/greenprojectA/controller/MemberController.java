@@ -15,6 +15,7 @@ import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.security.authentication.LockedException;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.authentication.logout.SecurityContextLogoutHandler;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
@@ -37,11 +38,11 @@ public class MemberController {
     private final MemberService memberService;
     private final JavaMailSender mailSender;
     private final HttpSession session;
+    private final PasswordEncoder passwordEncoder;
 
     // 로그인 페이지
     @GetMapping("/memberLogin")
     public String memberLoginGet(HttpServletRequest request, Model model, @ModelAttribute("message") String message) {
-        System.out.println("✅ memberLoginGet - message = " + message);
 
         // 쿠키에서 rememberId 꺼내기
         Cookie[] cookies = request.getCookies();
@@ -327,26 +328,75 @@ public class MemberController {
         }
     }
 
-    // 비밀번호 재설정
-    @PostMapping("/resetPassword")
-    public String resetPassword(@RequestParam String newPwd,
+    // 마이페이지 메뉴
+    @GetMapping("/mypage")
+    public String showMyPage() {
+        return "member/myPage";
+    }
+
+    // 비밀번호 확인폼
+    @GetMapping("/mypage/checkPwd")
+    public String showPwdCheckForm() {
+        return "member/pwdCheck";
+    }
+
+    @PostMapping("/mypage/checkPwd")
+    public String checkPassword(@RequestParam String password,
+                                HttpSession session,
                                 RedirectAttributes rttr) {
+        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+        String mid = auth.getName();
 
-        Boolean verified = (Boolean) session.getAttribute("findPwdVerified");
-        String mid = (String) session.getAttribute("resetTargetMid");
-
-        if (verified != null && verified && mid != null) {
-            memberService.updatePassword(mid, newPwd); // 암호화까지 처리됨
-            session.removeAttribute("findPwdVerified");
-            session.removeAttribute("resetTargetMid");
-            session.removeAttribute("findPwdCode");
-
-            rttr.addFlashAttribute("message", "비밀번호가 성공적으로 변경되었습니다.");
-            return "redirect:/member/memberLogin";
-        } else {
-            rttr.addFlashAttribute("message", "비정상적인 접근입니다. 다시 시도해주세요.");
-            return "redirect:/member/memberLogin";
+        Member member = memberService.findByMid(mid);
+        if (!passwordEncoder.matches(password, member.getPassword())) {
+            rttr.addFlashAttribute("message", "비밀번호가 일치하지 않습니다.");
+            return "redirect:/member/mypage/checkPwd";
         }
+
+        session.setAttribute("mypageVerified", true);
+        return "redirect:/member/mypage/info";
+    }
+
+    // 마이페이지 - 회원정보 수정 페이지
+    @GetMapping("/mypage/info")
+    public String showInfoUpdatePage(HttpSession session, RedirectAttributes rttr, Model model) {
+        Boolean verified = (Boolean) session.getAttribute("mypageVerified");
+        if (verified == null || !verified) {
+            rttr.addFlashAttribute("message", "회원정보 수정을 위해 비밀번호를 먼저 확인해주세요.");
+            return "redirect:/member/mypage/checkPwd";
+        }
+        String mid = SecurityContextHolder.getContext().getAuthentication().getName();
+        Member member = memberService.findByMid(mid);
+
+        model.addAttribute("member", member);
+
+        return "member/infoUpdate";
+    }
+
+    // 비밀번호 변경폼
+    @GetMapping("/mypage/changePwd")
+    public String showChangePwdPage() {
+        return "member/pwdChange";
+    }
+
+    // 비밀번호 변경
+    @PostMapping("/mypage/changePwd")
+    public String changePassword(@RequestParam String currentPwd,
+                                 @RequestParam String newPwd,
+                                 Authentication authentication,
+                                 RedirectAttributes rttr) {
+
+        String mid = authentication.getName();
+        Member member = memberService.findByMid(mid);
+
+        if (!passwordEncoder.matches(currentPwd, member.getPassword())) {
+            rttr.addFlashAttribute("message", "현재 비밀번호가 일치하지 않습니다.");
+            return "redirect:/member/mypage/changePwd";
+        }
+
+        memberService.updatePassword(mid, newPwd);
+        rttr.addFlashAttribute("message", "비밀번호가 성공적으로 변경되었습니다. 다시 로그인해주세요.");
+        return "redirect:/member/memberLogin";
     }
 
 

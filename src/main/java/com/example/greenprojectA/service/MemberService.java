@@ -39,8 +39,11 @@ public class MemberService implements UserDetailsService {
       throw new IllegalStateException("이미 사용 중인 아이디입니다.");
     }
 
-    Company company = companyRepository.findById(dto.getCompanyId())
-            .orElseThrow(() -> new IllegalArgumentException("유효하지 않은 회사 ID입니다."));
+    Company company = null;
+    if (dto.getCompanyId() != null) {
+      company = companyRepository.findById(dto.getCompanyId())
+              .orElseThrow(() -> new IllegalArgumentException("유효하지 않은 회사 ID입니다."));
+    }
 
     Member member = Member.builder()
             .mid(dto.getMid())

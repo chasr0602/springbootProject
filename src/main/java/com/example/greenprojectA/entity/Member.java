@@ -44,15 +44,11 @@ public class Member {
     @Column(name = "created_at")
     private LocalDateTime createdAt;
 
-    @Column(name = "pw_changed_at")
-    private LocalDateTime pwChangedAt;
-
     @Column(name = "quit_requested_at")
     private LocalDateTime quitRequestedAt;
 
     @PrePersist
     public void onCreate() {
         this.createdAt = LocalDateTime.now();
-        this.pwChangedAt = LocalDateTime.now();
     }
 }
