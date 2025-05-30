@@ -30,6 +30,7 @@ public class MemberDto {
   @NotNull(message = "소속 기업을 선택해야 합니다.")
   private Long companyId;
 
+  private Long idx;
   private String tel;
 
   // 선택 입력 항목

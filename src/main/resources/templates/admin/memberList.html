@@ -10,58 +10,80 @@
     <!-- 검색 폼 -->
     <form th:action="@{/admin/member}" method="get" class="row mb-4">
         <div class="col-auto">
-            <input type="text" name="keyword" class="form-control" placeholder="아이디, 이름, 소속 기업 검색"/>
+            <select name="category" class="form-select">
+                <option value="mid" th:selected="${category} == 'mid'">아이디</option>
+                <option value="username" th:selected="${category} == 'username'">이름</option>
+                <option value="company" th:selected="${category} == 'company'">소속 기업</option>
+            </select>
+        </div>
+        <div class="col-auto">
+            <input type="text" name="keyword" class="form-control" placeholder="검색어 입력" th:value="${keyword}" />
+        </div>
+        <div class="col-auto">
+            <select name="role" class="form-select">
+                <option value="">전체</option>
+                <option value="PENDING" th:selected="${role} == 'PENDING'">가입 요청</option>
+                <option value="WITHDRAWN" th:selected="${role} == 'WITHDRAWN'">탈퇴 요청</option>
+                <option value="USER" th:selected="${role} == 'USER'">일반 회원</option>
+            </select>
         </div>
         <div class="col-auto">
             <button type="submit" class="btn btn-outline-primary">검색</button>
         </div>
     </form>
 
-    <!-- 회원 리스트 -->
-    <table class="table table-bordered text-center align-middle">
-        <thead class="table-light">
-        <tr>
-            <th>번호</th>
-            <th>아이디</th>
-            <th>이름</th>
-            <th>소속 기업</th>
-            <th>이메일</th>
-            <th>전화번호</th>
-            <th>상태</th>
-            <th>처리</th>
-        </tr>
-        </thead>
-        <tbody>
-        <tr th:each="member, stat : ${memberList}">
-            <td th:text="${stat.index + 1}"></td>
-            <td th:text="${member.mid}"></td>
-            <td th:text="${member.username}"></td>
-            <td th:text="${member.company != null ? member.company.name : '미지정'}"></td>
-            <td th:text="${member.email}"></td>
-            <td th:text="${member.tel}"></td>
-            <td th:text="${member.role}"></td>
-            <td>
-                <!-- 가입대기 회원이면 승인 버튼 -->
-                <form th:if="${member.role.name() == 'PENDING'}" method="post" th:action="@{/admin/approve}">
-                    <input type="hidden" name="memberId" th:value="${member.idx}"/>
-                    <button type="submit" class="btn btn-success btn-sm">승인</button>
-                </form>
+    <!-- 회원 리스트 + 일괄 처리 폼 -->
+    <form method="post" th:action="@{/admin/bulkAction}">
+        <table class="table table-bordered text-center align-middle">
+            <thead class="table-light">
+            <tr>
+                <th><input type="checkbox" onclick="toggleAll(this)" /></th>
+                <th>번호</th>
+                <th>아이디</th>
+                <th>이름</th>
+                <th>소속 기업</th>
+                <th>이메일</th>
+                <th>전화번호</th>
+                <th>상태</th>
+                <th>탈퇴신청일</th>
+                <th>경과일</th>
+            </tr>
+            </thead>
+            <tbody>
+            <tr th:each="member, stat : ${memberList}">
+                <td>
+                    <input type="checkbox" name="memberIds"
+                           th:value="${member.idx}"
+                           th:if="${member.role.name() == 'PENDING' or member.role.name() == 'WITHDRAWN'}"/>
+                </td>
+                <td th:text="${stat.index + 1}"></td>
+                <td th:text="${member.mid}"></td>
+                <td th:text="${member.username}"></td>
+                <td th:text="${member.company != null ? member.company.name : '미지정'}"></td>
+                <td th:text="${member.email}"></td>
+                <td th:text="${member.tel}"></td>
+                <td th:text="${member.role}"></td>
+                <td th:text="${member.quitRequestedAt != null ? #temporals.format(member.quitRequestedAt, 'yyyy-MM-dd') : ''}"></td>
+                <td th:text="${member.quitRequestedAt != null ? T(java.time.temporal.ChronoUnit).DAYS.between(member.quitRequestedAt.toLocalDate(), T(java.time.LocalDate).now()) + '일' : ''}"></td>
+            </tr>
+            </tbody>
+        </table>
 
-                <!-- 탈퇴회원이면 삭제 버튼 -->
-                <form th:if="${member.role.name() == 'WITHDRAWN'}" method="post" th:action="@{/admin/delete}">
-                    <input type="hidden" name="memberId" th:value="${member.idx}"/>
-                    <button type="submit" class="btn btn-danger btn-sm">삭제</button>
-                </form>
-            </td>
-        </tr>
-        </tbody>
-    </table>
-
-    <!-- 메시지 alert -->
+        <div class="d-flex justify-content-end gap-2 mt-3">
+            <button type="submit" name="action" value="approve" class="btn btn-success btn-sm">선택 회원 승인</button>
+        </div>
+    </form>
     <th:block th:if="${message != null}">
         <script th:inline="javascript">
             alert([[${message}]]);
         </script>
     </th:block>
+
+    <script>
+        function toggleAll(source) {
+            const checkboxes = document.querySelectorAll("input[name='memberIds']");
+            checkboxes.forEach(cb => cb.checked = source.checked);
+        }
+    </script>
 </div>
 </html>

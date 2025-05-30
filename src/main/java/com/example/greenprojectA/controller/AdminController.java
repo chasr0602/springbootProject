@@ -21,18 +21,28 @@ public class AdminController {
     private final MemberService memberService;
     private final CompanyService companyService;
 
-    // 회원 리스트 + 검색
+    // 회원 리스트 + 검색 + Role 필터링
     @GetMapping("/member")
-    public String showMemberList(@RequestParam(required = false) String keyword, Model model) {
+    public String showMemberList(@RequestParam(required = false) String keyword,
+                                 @RequestParam(required = false) String category,
+                                 @RequestParam(required = false) String role,
+                                 Model model) {
+
         List<Member> memberList;
 
-        if (keyword != null && !keyword.isEmpty()) {
-            memberList = memberService.searchByKeyword(keyword);
+        if (role != null && !role.isEmpty()) {
+            memberList = memberService.findByRoleFiltered(role, category, keyword);
+        } else if (keyword != null && !keyword.isEmpty() && category != null) {
+            memberList = memberService.searchByCategory(category, keyword);
         } else {
             memberList = memberService.findAll();
         }
 
         model.addAttribute("memberList", memberList);
+        model.addAttribute("keyword", keyword);
+        model.addAttribute("category", category);
+        model.addAttribute("role", role);
+
         return "admin/memberList";
     }
 
@@ -44,15 +54,15 @@ public class AdminController {
         return "redirect:/admin/member";
     }
 
+    // 회원 승인 일괄 처리
+    @PostMapping("bulkAction")
+    public String handleBulkAction(@RequestParam List<Long> memberIds,
+                                   @RequestParam String action,
+                                   RedirectAttributes redirectAttributes) {
 
-    // 탈퇴 회원 처리 (WITHDRAWN → 삭제 or 유지)
-    @PostMapping("/delete")
-    public String deleteMember(@RequestParam("memberId") Long memberId, RedirectAttributes rttr) {
-        try {
-            memberService.deleteIfWithdrawn(memberId);
-            rttr.addFlashAttribute("message", "회원이 삭제되었습니다.");
-        } catch (IllegalStateException e) {
-            rttr.addFlashAttribute("message", e.getMessage());
+        if ("approve".equals(action)) {
+            memberService.approveMembers(memberIds);
+            redirectAttributes.addFlashAttribute("message", "선택된 회원의 가입 승인이 완료되었습니다.");
         }
         return "redirect:/admin/member";
     }
@@ -62,6 +72,23 @@ public class AdminController {
     public String showCompanyPage(Model model) {
         model.addAttribute("company", new Company());
         model.addAttribute("companyList", companyService.findAll());
+        return "admin/company";
+    }
+
+    // 기업 이름으로 검색
+    @GetMapping("/admin/company")
+    public String companyList(@RequestParam(value = "keyword", required = false) String keyword, Model model) {
+        List<Company> companyList;
+
+        if (keyword != null && !keyword.trim().isEmpty()) {
+            companyList = companyService.searchByName(keyword);
+            model.addAttribute("keyword", keyword);
+        } else {
+            companyList = companyService.findAll();
+        }
+
+        model.addAttribute("companyList", companyList);
+        model.addAttribute("company", new Company());
         return "admin/company";
     }
 

@@ -5,42 +5,60 @@
 
 <th:block layout:fragment="content">
     <div class="container mt-5" style="max-width: 500px;">
-        <h2 class="text-center mb-4">비밀번호 변경</h2>
+      <th:block th:if="${message != null}">
+        <script th:inline="javascript">
+          alert([[${message}]]);
+        </script>
+      </th:block>
+      <h2 class="text-center mb-4">비밀번호 변경</h2>
 
-        <form method="post" th:action="@{/member/resetPassword}" onsubmit="return validateForm();">
-            <div class="mb-3">
-                <label for="currentPwd" class="form-label">현재 비밀번호</label>
-                <input type="password" id="currentPwd" name="currentPwd" class="form-control" required>
-            </div>
-            <div class="mb-3">
-                <label for="newPwd" class="form-label">새 비밀번호</label>
-                <input type="password" id="newPwd" name="newPwd" class="form-control" required>
-            </div>
-            <div class="mb-3">
-                <label for="confirmPwd" class="form-label">비밀번호 확인</label>
-                <input type="password" id="confirmPwd" class="form-control" required>
-            </div>
-            <button type="submit" class="btn btn-success w-100">비밀번호 변경</button>
-        </form>
+      <form method="post" th:action="@{/member/mypage/changePwd}" onsubmit="return validateForm();" novalidate>
+        <div class="mb-3">
+          <label for="currentPwd" class="form-label">현재 비밀번호</label>
+            <input type="password" id="currentPwd" name="currentPwd" class="form-control" required>
+        </div>
+        <div class="mb-3">
+          <label for="newPwd" class="form-label">새 비밀번호</label>
+            <input type="password" id="newPwd" name="newPwd" class="form-control" required>
+        </div>
+        <div class="mb-3">
+          <label for="confirmPwd" class="form-label">비밀번호 확인</label>
+            <input type="password" id="confirmPwd" name="confirmPwd" class="form-control" required>
+        </div>
+        <button type="submit" class="btn btn-success w-100">비밀번호 변경</button>
+      </form>
     </div>
 </th:block>
 
 <th:block layout:fragment="script">
     <script th:inline="javascript">
         function validateForm() {
-          const newPwd = document.getElementById('newPwd').value;
-          const confirmPwd = document.getElementById('confirmPwd').value;
+          const currentPwd = document.getElementById('currentPwd').value.trim();
+          const newPwd = document.getElementById('newPwd').value.trim();
+          const confirmPwd = document.getElementById('confirmPwd').value.trim();
 
+          const regPwd = /^[a-zA-Z0-9!@#$%^&*]{4,16}$/;
+
+          if (!currentPwd) {
+            alert("현재 비밀번호를 입력해주세요.");
+            return false;
+          }
+          if (!newPwd) {
+            alert("새 비밀번호를 입력해주세요.");
+            return false;
+          }
+          if (!regPwd.test(newPwd)) {
+            alert("비밀번호는 4~16자의 영문, 숫자, 특수문자(!@#$%^&*)만 사용 가능합니다.");
+            return false;
+          }
+          if (!confirmPwd) {
+            alert("비밀번호를 한번 더 입력해주세요.");
+            return false;
+          }
           if (newPwd !== confirmPwd) {
-            alert("비밀번호가 일치하지 않습니다.");
+            alert("새 비밀번호와 비밀번호 확인이 일치하지 않습니다.");
             return false;
           }
-
-          if (newPwd.length < 4) {
-            alert("비밀번호는 최소 4자리 이상이어야 합니다.");
-            return false;
-          }
-
           return true;
         }
     </script>

@@ -20,6 +20,11 @@ public class CompanyService {
         return companyRepository.findAll();
     }
 
+    // 기업 검색
+    public List<Company> searchByName(String keyword) {
+        return companyRepository.findByNameContaining(keyword);
+    }
+
     // 기업 추가
     public void addCompany(Company company) {
         companyRepository.save(company);

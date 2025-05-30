@@ -17,9 +17,16 @@ public interface MemberRepository extends JpaRepository<Member, Long> {
   boolean existsByEmail(String email);
   boolean existsByCompany_Idx(Long companyId);
 
-  // 관리자 승인 기능을 위한 가입대기 회원 조회
-  List<Member> findByRole(Role role);
-
   // 회원 검색
-  List<Member> findByMidContainingOrUsernameContainingOrCompany_NameContaining(String mid, String username, String companyName);
+  List<Member> findByMidContaining(String mid);
+  List<Member> findByUsernameContaining(String username);
+  List<Member> findByCompany_NameContaining(String name);
+
+  // 회원 Role 필터링
+  List<Member> findByRoleAndMidContaining(Role role, String mid);
+  List<Member> findByRoleAndUsernameContaining(Role role, String username);
+  List<Member> findByRoleAndCompany_NameContaining(Role role, String name);
+
+  // 가입대기 회원 조회
+  List<Member> findByRole(Role role);
 }

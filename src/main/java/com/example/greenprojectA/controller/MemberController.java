@@ -107,7 +107,7 @@ public class MemberController {
 
             rttr.addFlashAttribute("message", "임시 비밀번호로 로그인되었습니다.\n보안을 위해 비밀번호를 변경해주세요.");
             session.removeAttribute("tempPwdUser");
-            return "redirect:/member/memberLogin";
+            return "redirect:/member/memberMain";
         }
 
         rttr.addFlashAttribute("message", member.getUsername() + "님 로그인 되었습니다.");
@@ -205,13 +205,14 @@ public class MemberController {
     }
 
     // 탈퇴 요청 처리
-    @PostMapping("/requestQuit")
-    public String requestQuit(Authentication authentication,
-                              RedirectAttributes rttr) {
+    @PostMapping("/withdraw")
+    public String withdrawMember(Authentication authentication,
+                                 RedirectAttributes rttr) {
         String mid = authentication.getName();
-        memberService.requestQuit(mid);
+        memberService.requestWithdrawal(mid);
+        SecurityContextHolder.clearContext(); // 즉시 로그아웃
         rttr.addFlashAttribute("message", "탈퇴 요청이 완료되었습니다. 7일의 유예기간 후 완전히 삭제됩니다.");
-        return "redirect:/member/memberLogout";
+        return "redirect:/";
     }
 
     // 이메일 인증번호 전송
@@ -291,7 +292,7 @@ public class MemberController {
 
             memberService.updatePassword(mid, tempPwd);
 
-            // 임시비번 발송
+            // 임시비밀번호 발송
             SimpleMailMessage message = new SimpleMailMessage();
             message.setTo(email);
             message.setSubject("[GreenProjectA] 임시 비밀번호 안내");
@@ -310,21 +311,6 @@ public class MemberController {
         } else {
             rttr.addFlashAttribute("message", "일치하는 회원 정보가 없습니다.");
             return "redirect:/member/findPwd";
-        }
-    }
-
-    // 인증번호 확인
-    @PostMapping("/verifyPwdCode")
-    @ResponseBody
-    public String verifyPwdCode(@RequestBody Map<String, String> payload) {
-        String inputCode = payload.get("code");
-        String savedCode = (String) session.getAttribute("findPwdCode");
-
-        if (savedCode != null && savedCode.equals(inputCode)) {
-            session.setAttribute("findPwdVerified", true);
-            return "success";
-        } else {
-            return "fail";
         }
     }
 
@@ -373,6 +359,30 @@ public class MemberController {
         return "member/infoUpdate";
     }
 
+    // 회원정보 수정
+    @PostMapping("/memberUpdate")
+    public String updateMember(@ModelAttribute MemberDto memberDto,
+                               BindingResult bindingResult,
+                               RedirectAttributes rttr,
+                               HttpSession session,
+                               Model model) {
+
+        // 유효성 검사 실패 시 다시 폼으로
+        if (bindingResult.hasErrors()) {
+            model.addAttribute("companyList", memberService.getCompanyList());
+            return "member/inforUpdate";
+        }
+
+        try {
+            memberService.updateMember(memberDto);
+            rttr.addFlashAttribute("message", "회원정보가 수정되었습니다.");
+            return "redirect:/member/mypage";
+        } catch (Exception e) {
+            rttr.addFlashAttribute("message", "수정 중 오류가 발생했습니다.");
+            return "redirect:/member/inforUpdate";
+        }
+    }
+
     // 비밀번호 변경폼
     @GetMapping("/mypage/changePwd")
     public String showChangePwdPage() {
@@ -383,6 +393,7 @@ public class MemberController {
     @PostMapping("/mypage/changePwd")
     public String changePassword(@RequestParam String currentPwd,
                                  @RequestParam String newPwd,
+                                 @RequestParam String confirmPwd,
                                  Authentication authentication,
                                  RedirectAttributes rttr) {
 
@@ -393,11 +404,17 @@ public class MemberController {
             rttr.addFlashAttribute("message", "현재 비밀번호가 일치하지 않습니다.");
             return "redirect:/member/mypage/changePwd";
         }
+        if (!newPwd.equals(confirmPwd)) {
+            rttr.addFlashAttribute("message", "새 비밀번호와 비밀번호 확인이 일치하지 않습니다.");
+            return "redirect:/member/mypage/changePwd";
+        }
+        if (passwordEncoder.matches(newPwd, member.getPassword())) {
+            rttr.addFlashAttribute("message", "이전과 동일한 비밀번호는 사용할 수 없습니다.");
+            return "redirect:/member/mypage/changePwd";
+        }
 
         memberService.updatePassword(mid, newPwd);
         rttr.addFlashAttribute("message", "비밀번호가 성공적으로 변경되었습니다. 다시 로그인해주세요.");
         return "redirect:/member/memberLogin";
     }
-
-
 }

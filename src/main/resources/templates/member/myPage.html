@@ -5,6 +5,11 @@
 
 <th:block layout:fragment="content">
   <div class="container mt-5" style="max-width: 600px;">
+    <th:block th:if="${message != null}">
+      <script th:inline="javascript">
+        alert([[${message}]]);
+      </script>
+    </th:block>
     <h2 class="text-center mb-4">마이페이지</h2>
 
     <div class="list-group">
