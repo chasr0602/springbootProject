@@ -1,16 +1,20 @@
 package com.example.greenprojectA.controller;
 
 import com.example.greenprojectA.constant.Role;
+import com.example.greenprojectA.dto.DeviceDto;
+import com.example.greenprojectA.dto.SensorDto;
+import com.example.greenprojectA.dto.SensorThresholdDto;
 import com.example.greenprojectA.entity.Member;
 import com.example.greenprojectA.entity.Company;
-import com.example.greenprojectA.service.MemberService;
-import com.example.greenprojectA.service.CompanyService;
+import com.example.greenprojectA.entity.SensorThreshold;
+import com.example.greenprojectA.service.*;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
+import java.util.ArrayList;
 import java.util.List;
 
 @Controller
@@ -20,6 +24,9 @@ public class AdminController {
 
     private final MemberService memberService;
     private final CompanyService companyService;
+    private final SensorService sensorService;
+    private final DeviceService deviceService;
+    private final ThresholdService thresholdService;
 
     // 회원 리스트 + 검색 + Role 필터링
     @GetMapping("/member")
@@ -116,5 +123,57 @@ public class AdminController {
         }
         return "redirect:/admin/company";
     }
+
+    @GetMapping("/dashboard")
+    public String myDashBoardGet(Model model) {
+        return "admin/dashboard";
+    }
+
+    @GetMapping("/getLatestData")
+    @ResponseBody
+    public List<SensorDto> getLatestData() {
+        List<SensorDto> latestData = sensorService.getLatestSensorDataDto();
+        return latestData;
+    }
+
+    @GetMapping("deviceList")
+    public String deviceListGet(Model model) {
+        List<DeviceDto> deviceList = deviceService.getDeviceList();
+        model.addAttribute("deviceList", deviceList);
+        return "admin/deviceList";
+    }
+
+    @GetMapping("/thresholdUpdate/{deviceCode}")
+    public String thresholdUpdateGet(@PathVariable String deviceCode, Model model) {
+        DeviceDto deviceDto = deviceService.getDevice(deviceCode);
+
+        List<SensorThresholdDto> thresholdDtoList = new ArrayList<>();
+        // valueNo: 1~10 반복하며 최신값 가져오기
+        for (int i = 1; i <= 10; i++) {
+            SensorThresholdDto thresholdDto = thresholdService
+                    .getLatestThresholdByDeviceCode(deviceCode, i);
+            if (thresholdDto != null) {
+                thresholdDtoList.add(thresholdDto);
+            }
+        }
+
+        model.addAttribute("deviceDto", deviceDto);
+        model.addAttribute("thresholdList", thresholdDtoList);
+
+        return "admin/thresholdUpdate";
+    }
+
+    @PostMapping("/thresholdUpdate/{deviceCode}/{valueNo}")
+    public String updateThreshold(RedirectAttributes rttr, SensorThresholdDto thresholdDto) {
+        try {
+            thresholdService.setThresholdInput(SensorThreshold.createSensorThreshold(thresholdDto));
+            rttr.addFlashAttribute("message", "임계값이 성공적으로 저장되었습니다.");
+        } catch (Exception e) {
+            rttr.addFlashAttribute("message", "임계값 저장 중 오류가 발생했습니다.");
+        }
+
+        return "redirect:/admin/thresholdUpdate/" + thresholdDto.getDeviceCode();
+    }
+
 
 }

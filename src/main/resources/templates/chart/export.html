@@ -1,0 +1,165 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+  <meta charset="UTF-8">
+  <title>센서 데이터 엑셀 내보내기</title>
+  <style>
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 20px;
+    }
+
+    th, td {
+      border: 1px solid #ccc;
+      padding: 5px;
+      text-align: center;
+    }
+
+    th {
+      background-color: #f2f2f2;
+    }
+
+    .message {
+      color: gray;
+      text-align: center;
+    }
+
+    .error {
+      color: red;
+      text-align: center;
+    }
+  </style>
+</head>
+<body>
+
+<h2>데이터 다운로드</h2>
+
+<form id="exportForm">
+  <label for="startDate">시작일:</label>
+  <input type="datetime-local" id="startDate" name="startDate" required>
+
+  <label for="endDate">종료일:</label>
+  <input type="datetime-local" id="endDate" name="endDate" required>
+
+  <label>센서 번호:
+    <select id="deviceCode">
+      <option value="">전체</option>
+      <option value="ENV_V2_1">센서1</option>
+      <option value="ENV_V2_2">센서2</option>
+      <option value="ENV_V2_3">센서3</option>
+      <option value="ENV_V2_4">센서4</option>
+    </select>
+  </label>
+
+  <button type="submit">엑셀 다운로드</button>
+</form>
+
+<h3>미리보기 (최대 100개 행)</h3>
+<table>
+  <thead>
+  <tr>
+    <th>측정일시</th>
+    <th>디바이스코드</th>
+    <th>실내온도</th>
+    <th>상대습도</th>
+    <th>이산화탄소</th>
+    <th>VOC</th>
+    <th>PM1.0</th>
+    <th>PM2.5</th>
+    <th>PM10</th>
+    <th>온도1</th>
+    <th>온도2</th>
+    <th>온도3</th>
+    <th>소음</th>
+    <th>비접촉온도</th>
+    <th>조도</th>
+  </tr>
+  </thead>
+  <tbody id="previewTable">
+  <!-- 데이터 출력 -->
+  </tbody>
+</table>
+
+<script>
+  // 엑셀 다운로드
+  document.getElementById("exportForm").addEventListener("submit", function(e) {
+    e.preventDefault();
+
+    const startDate = document.getElementById("startDate").value;
+    const endDate = document.getElementById("endDate").value;
+    const deviceCode = document.getElementById("deviceCode").value;
+
+    if (startDate > endDate) {
+      alert("종료일은 시작일보다 늦어야 합니다.");
+      return;
+    }
+
+    const params = new URLSearchParams({ startDate, endDate });
+    if (deviceCode) params.append("deviceCode", deviceCode);
+
+    window.location.href = `/sensor/export-page/export?${params.toString()}`;
+  });
+
+  // 미리보기
+  document.getElementById("deviceCode").addEventListener("change", previewData);
+  document.getElementById("startDate").addEventListener("change", previewData);
+  document.getElementById("endDate").addEventListener("change", previewData);
+
+  function previewData() {
+    const startDate = document.getElementById("startDate").value;
+    const endDate = document.getElementById("endDate").value;
+    const deviceCode = document.getElementById("deviceCode").value;
+    const tableBody = document.getElementById("previewTable");
+
+    if (!startDate || !endDate) return;
+
+    if (startDate > endDate) {
+      tableBody.innerHTML = `<tr><td colspan="15" class="error">시작일은 종료일보다 이전이어야 합니다.</td></tr>`;
+      return;
+    }
+
+    const params = new URLSearchParams({ startDate, endDate });
+    if (deviceCode) params.append("deviceCode", deviceCode);
+
+    fetch(`/sensor/export-page/preview?${params.toString()}`)
+      .then(response => response.json())
+      .then(data => {
+        tableBody.innerHTML = "";
+
+        if (!Array.isArray(data) || data.length === 0) {
+          tableBody.innerHTML = `<tr><td colspan="15" class="message">해당 기간의 데이터가 없습니다.</td></tr>`;
+          return;
+        }
+
+        data.slice(0, 100).forEach(sensor => {
+          const row = document.createElement("tr");
+          row.innerHTML = `
+            <td>${sensor.measureDatetime.replace("T", " ")}</td>
+            <td>${sensor.deviceCode}</td>
+            <td>${sensor.value1 ?? ""}</td>
+            <td>${sensor.value2 ?? ""}</td>
+            <td>${sensor.value3 ?? ""}</td>
+            <td>${sensor.value4 ?? ""}</td>
+            <td>${sensor.value5 ?? ""}</td>
+            <td>${sensor.value6 ?? ""}</td>
+            <td>${sensor.value7 ?? ""}</td>
+            <td>${sensor.value8 ?? ""}</td>
+            <td>${sensor.value9 ?? ""}</td>
+            <td>${sensor.value10 ?? ""}</td>
+            <td>${sensor.value11 ?? ""}</td>
+            <td>${sensor.value12 ?? ""}</td>
+            <td>${sensor.value13 ?? ""}</td>
+          `;
+          tableBody.appendChild(row);
+        });
+      })
+      .catch(error => {
+        console.error("미리보기 오류", error);
+        tableBody.innerHTML = `<tr><td colspan="15" class="error">미리보기를 불러오는 중 오류가 발생했습니다.</td></tr>`;
+      });
+  }
+</script>
+
+</body>
+</html>

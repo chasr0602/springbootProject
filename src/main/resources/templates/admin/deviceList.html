@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+<html lang="ko"
+      xmlns:th="http://www.thymeleaf.org"
+      xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
+      layout:decorate="~{layouts/exampleLayout}">
+
+<div layout:fragment="content" class="container text-center mt-4">
+  <h2 class="mb-4">디바이스 리스트</h2>
+
+  <table class="table table-striped">
+    <thead>
+    <tr>
+      <th>IDX</th>
+      <th>디바이스 코드</th>
+      <th>회사 ID</th>
+      <th>임계값 설정</th>
+    </tr>
+    </thead>
+    <tbody>
+    <tr th:each="device : ${deviceList}">
+      <td th:text="${device.idx}"></td>
+      <td th:text="${device.deviceCode}"></td>
+      <td th:text="${device.companyId}"></td>
+      <td>
+        <a th:href="@{/admin/thresholdUpdate/{deviceCode}(deviceCode=${device.deviceCode})}" class="btn btn-sm btn-primary">설정</a>
+      </td>
+    </tr>
+    </tbody>
+  </table>
+</div>
+
+</html>

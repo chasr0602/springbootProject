@@ -1,0 +1,260 @@
+<!DOCTYPE html>
+<html lang="ko" xmlns:th="http://www.thymeleaf.org" xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
+      layout:decorate="~{layouts/exampleLayout}">
+
+<th:block layout:fragment="css">
+  <style>
+    .dashboard-header {
+      display: flex;
+      justify-content: space-between;
+      text-align: center;
+      margin-bottom: 20px;
+    }
+
+    .dashboard-header h2 {
+      margin-bottom: 10px;
+    }
+
+    .dashboard-header .time {
+      font-size: 1.1em;
+      color: #555;
+    }
+
+    .main-layout {
+      display: flex;
+      gap: 30px;
+    }
+
+    .dashboard-container {
+      flex: 3;
+      border: 1px solid #ddd;
+      padding: 20px;
+      border-radius: 12px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+    }
+
+    .dashboard-top {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 20px;
+    }
+
+    .dashboard-title {
+      font-size: 18px;
+      font-weight: bold;
+    }
+
+    .device-filter {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .weather-box {
+      flex: 1;
+      background: #eef1f5;
+      padding: 20px;
+      border-radius: 12px;
+      border: 1px solid #ddd;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+      height: fit-content;
+    }
+
+    .device-group {
+      margin-bottom: 30px;
+    }
+
+    .dashboard {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+      gap: 20px;
+    }
+
+    .sensor-card {
+      height: 150px;
+      padding: 15px;
+      border-radius: 12px;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.1);
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .sensor-value {
+      font-size: 28px;
+      font-weight: bold;
+    }
+
+    .sensor-location {
+      font-size: 14px;
+      color: #666;
+    }
+
+    .sensor-label {
+      font-size: 16px;
+      margin-top: 5px;
+    }
+
+    .normal {
+      background-color: #d8f5d8; /* 녹색: 정상 */
+    }
+
+    .warning {
+      background-color: #fcdede; /* 빨강: 이벤트 발생 */
+    }
+  </style>
+</th:block>
+
+<div layout:fragment="content" class="container">
+  <div class="dashboard-header">
+    <span class="header-title">GreenMonitor Dashboard</span>
+    <span class="time" id="currentTime"></span>
+  </div>
+
+  <div class="main-layout">
+    <div class="dashboard-container">
+      <div class="dashboard-top">
+        <div class="dashboard-title">Sensor Data</div>
+        <div class="device-filter">
+          <label for="deviceFilter">디바이스 선택: </label>
+          <select id="deviceFilter">
+            <option value="ALL">전체</option>
+            <option value="ENV_V2_1">1F</option>
+            <option value="ENV_V2_2">2F</option>
+            <option value="ENV_V2_3">자재실</option>
+            <option value="ENV_V2_4">포장실</option>
+          </select>
+        </div>
+      </div>
+      <div id="dashboard"></div>
+    </div>
+
+    <div class="weather-box">
+      <h4>🌤 현재 날씨</h4>
+      <p>날씨 API 연동 예정 영역입니다.</p>
+      <p>기온, 습도, 미세먼지 등 표시 가능</p>
+    </div>
+  </div>
+</div>
+
+<th:block layout:fragment="script">
+  <script>
+    // 센서 값 이름 배열
+    const valueLabels = [
+      "실내온도", "상대습도", "이산화탄소", "유기화합물VOC",
+      "초미세먼지(PM1.0)", "초미세먼지(PM2.5)", "미세먼지(PM10)",
+      "냉장고_온도1", "냉장고_온도2", "냉장고_온도3"
+    ];
+
+    // 디바이스 코드 → 위치명 매핑
+    const deviceMap = {
+      "ENV_V2_1": "1F",
+      "ENV_V2_2": "2F",
+      "ENV_V2_3": "자재실",
+      "ENV_V2_4": "포장실"
+    };
+
+    // 현재 시각 표시
+    function updateTime() {
+      const now = new Date();
+      document.getElementById('currentTime').innerText = now.toLocaleString('ko-KR');
+    }
+
+    // 센서 데이터 fetch
+    function fetchLatestData() {
+      $.ajax({
+        url: '/admin/getLatestData',
+        type: 'GET',
+        dataType: 'json',
+        success: function(res) {
+          renderDashboard(res);
+        },
+        error: function(err) {
+          console.error('데이터 불러오기 실패:', err);
+        }
+      });
+    }
+
+    // 대시보드 렌더링
+    function renderDashboard(sensorList) {
+      const selectedDevice = $('#deviceFilter').val();
+      const dashboard = $('#dashboard');
+      dashboard.empty();
+
+      if (selectedDevice === 'ALL') {
+        // 디바이스별로 그룹핑하여 렌더링
+        const grouped = {};
+        sensorList.forEach(s => {
+          if (!grouped[s.deviceCode]) grouped[s.deviceCode] = [];
+          grouped[s.deviceCode].push(s);
+        });
+
+        for (const [deviceCode, sensors] of Object.entries(grouped)) {
+          const groupDiv = $('<div class="device-group"></div>');
+          const grid = $('<div class="dashboard"></div>');
+
+          sensors.forEach(sensor => {
+            for (let i = 1; i <= 10; i++) {
+              const value = sensor['value' + i];
+              const eventFlag = sensor['value' + i + 'Event'];
+              const label = valueLabels[i - 1];
+              const bgClass = eventFlag ? 'warning' : 'normal';
+
+              const card = $(`
+                <div class="sensor-card ${bgClass}">
+                  <div class="sensor-label">${label}</div>
+                  <div class="sensor-value">${value}</div>
+                  <div class="sensor-location">${deviceMap[deviceCode]}</div>
+                </div>
+              `);
+              grid.append(card);
+            }
+          });
+
+          groupDiv.append(grid);
+          dashboard.append(groupDiv);
+        }
+
+      } else {
+        // 특정 디바이스만 보기
+        const selected = sensorList.find(s => s.deviceCode === selectedDevice);
+        if (!selected) return;
+
+        const grid = $('<div class="dashboard"></div>');
+
+        for (let i = 1; i <= 10; i++) {
+          const value = selected['value' + i];
+          const eventFlag = selected['value' + i + 'Event'];
+          const label = valueLabels[i - 1];
+          const bgClass = eventFlag ? 'warning' : 'normal';
+
+          const card = $(`
+            <div class="sensor-card ${bgClass}">
+              <div class="sensor-label">${label}</div>
+              <div class="sensor-value">${value}</div>
+              <div class="sensor-location">${deviceMap[selectedDevice]}</div>
+            </div>
+          `);
+          grid.append(card);
+        }
+
+        dashboard.append(grid);
+      }
+    }
+
+    // 초기 로드 시 실행
+    $(document).ready(function() {
+      updateTime();
+      setInterval(updateTime, 1000); // 실시간 시각 갱신
+
+      fetchLatestData();
+      setInterval(fetchLatestData, 10000); // 10초마다 센서값 갱신
+
+      $('#deviceFilter').on('change', fetchLatestData); // 필터 변경 시 갱신
+    });
+  </script>
+</th:block>
+
+</html>

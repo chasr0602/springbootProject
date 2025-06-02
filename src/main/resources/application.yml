@@ -1,6 +1,6 @@
 # server port Setting
 server:
-  port: 9099
+  port: 60001
 #  port: 80
 
 # Context Name Setting

@@ -41,6 +41,11 @@ dependencies {
 	implementation 'org.springframework.boot:spring-boot-starter-web'
 	implementation 'org.thymeleaf.extras:thymeleaf-extras-springsecurity6'
 
+	// excel 처리를 위한 poi 라이브러리
+	implementation 'org.apache.poi:poi:5.4.0'
+	implementation 'org.apache.poi:poi-ooxml:5.4.0'
+	implementation 'com.opencsv:opencsv:5.10'
+
 	compileOnly 'org.projectlombok:lombok'
 	developmentOnly 'org.springframework.boot:spring-boot-devtools'
 	runtimeOnly 'com.mysql:mysql-connector-j'

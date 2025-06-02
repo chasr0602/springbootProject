@@ -1,0 +1,26 @@
+<!DOCTYPE html>
+<html lang="ko"
+      xmlns:th="http://www.thymeleaf.org"
+      xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
+      layout:decorate="~{layouts/exampleLayout}">
+
+<div layout:fragment="content" class="container mt-4">
+  <h2 class="mb-4 text-center" th:text="'디바이스 임계값 설정 - ' + ${deviceCode}">디바이스코드</h2>
+
+  <div th:each="threshold : ${thresholdList}">
+    <form th:action="@{/admin/thresholdUpdate/{deviceCode}/{valueNo}(deviceCode=${deviceCode}, valueNo=${threshold.valueNo})}" method="post" class="mb-4 border p-3 rounded">
+      <input type="hidden" name="companyId" th:value="${threshold.companyId}" />
+      <input type="hidden" name="deviceCode" th:value="${deviceCode}" />
+      <input type="hidden" name="createdBy" th:value="${session.sMid}" />
+
+      <div>센서 번호: <span th:text="${threshold.valueNo}">1</span></div>
+      <div>
+        최소값: <input type="number" name="minValue" th:value="${threshold.minValue}" />
+        최대값: <input type="number" name="maxValue" th:value="${threshold.maxValue}" />
+       <button type="submit" class="btn btn-primary mt-2">저장</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+</html>

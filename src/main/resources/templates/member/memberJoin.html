@@ -16,7 +16,7 @@
       flex-direction: column;
       min-height: 100vh;
     }
-    .container {
+    .container-wrapper {
       flex: 1;
       max-width: 700px; /* ← 넓이 늘림 */
       padding: 40px 30px;
@@ -66,7 +66,7 @@
   </style>
 </th:block>
 
-<div layout:fragment="content" class="container">
+<div layout:fragment="content" class="container-wrapper">
   <h2 class="text-center mb-4">회 원 가 입</h2>
 
   <form role="form" method="post" th:object="${memberDto}" onsubmit="return validateForm();">

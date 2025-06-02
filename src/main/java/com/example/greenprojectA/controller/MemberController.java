@@ -107,7 +107,7 @@ public class MemberController {
 
             rttr.addFlashAttribute("message", "임시 비밀번호로 로그인되었습니다.\n보안을 위해 비밀번호를 변경해주세요.");
             session.removeAttribute("tempPwdUser");
-            return "redirect:/member/memberMain";
+            return "redirect:/";
         }
 
         rttr.addFlashAttribute("message", member.getUsername() + "님 로그인 되었습니다.");
@@ -115,18 +115,12 @@ public class MemberController {
 
         String strLevel = switch (role) {
             case ADMIN -> "관리자";
-            case USER -> "일반회원";
+            case USER -> "기업회원";
             default -> "알 수 없음";
         };
         session.setAttribute("strLevel", strLevel);
 
-        return "redirect:/member/memberMain";
-    }
-
-    // 회원 메인페이지
-    @GetMapping("/memberMain")
-    public String memberMain(@ModelAttribute("message") String message) {
-        return "member/memberMain";
+        return "redirect:/";
     }
 
     // 로그아웃

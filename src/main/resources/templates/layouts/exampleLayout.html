@@ -6,7 +6,7 @@
   <meta charset="UTF-8">
   <title>layout.html</title>
   <th:block th:insert="~{/include/bs5.html}"></th:block>
-  <!--<link rel="stylesheet" type="text/css" th:href="@{/css/example.css}">-->
+  <link rel="stylesheet" type="text/css" th:href="@{/css/example.css}">
 
   <!-- js파일, css파일을 아래쪽으로 처리하는 영역 -->
   <th:block layout:fragment="script"></th:block>
@@ -14,10 +14,8 @@
 </head>
 <body>
 <div th:replace="~{include/header::header}"></div>
-<p><br/></p>
 <div layout:fragment="content" class="content">
 </div>
-<p><br/></p>
 <div th:replace="~{include/footer::footer}"></div>
 </body>
 </html>
